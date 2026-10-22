@@ -1,0 +1,13 @@
+{
+  "name": "app-user-guide-generator",
+  "displayName": "App User Guide Generator",
+  "version": "1.0.0",
+  "description": "Generate end-user guides per module from the app's own existing help content (verbatim) or, as a fallback, from source code investigation — not guesses.",
+  "author": {
+    "name": "Anugerah Christian"
+  },
+  "repository": "https://github.com/anugerahc/skills-claude-doc-apps-guide",
+  "license": "MIT",
+  "keywords": ["documentation", "user-guide", "help-content", "reverse-engineering"],
+  "skills": "./skills"
+}

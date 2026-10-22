@@ -1,0 +1,25 @@
+{
+  "$schema": "https://code.claude.com/schemas/marketplace.json",
+  "name": "app-user-guide-generator-marketplace",
+  "owner": {
+    "name": "Anugerah Christian"
+  },
+  "description": "Marketplace for the App User Guide Generator plugin — generate end-user guides for any app module from its own in-app help content (verbatim) or, as a fallback, from source code investigation.",
+  "version": "1.0.0",
+  "plugins": [
+    {
+      "name": "app-user-guide-generator",
+      "source": "./plugins/app-user-guide-generator",
+      "displayName": "App User Guide Generator",
+      "description": "Generate end-user guides per module — finds and extracts the app's own existing help content verbatim before ever reconstructing one from reading code.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Anugerah Christian"
+      },
+      "repository": "https://github.com/anugerahc/skills-claude-doc-apps-guide",
+      "license": "MIT",
+      "keywords": ["documentation", "user-guide", "help-content", "reverse-engineering"],
+      "category": "productivity"
+    }
+  ]
+}
