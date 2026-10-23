@@ -15,21 +15,27 @@ description: Use when asked to write, generate, or extract an end-user guide / h
 >
 > **Read-only terhadap diri sendiri.** `${CLAUDE_PLUGIN_ROOT}/core` dan
 > `${CLAUDE_PLUGIN_ROOT}/template` TIDAK BOLEH ditulis/diedit — itu bundle plugin, bukan folder
-> kerja. Copy ketiga skeleton (`guide-walkthrough.template.html`, `guide-tour.template.js`,
-> `GUIDE.template.md`) ke lokasi output di project user dulu, baru edit salinannya di sana.
+> kerja. Copy keempat skeleton (`guide-walkthrough.template.html`, `guide-tour.template.js`,
+> `GUIDE.template.md`, `lint-id-text.js`) ke lokasi output di project user dulu, baru edit
+> salinannya di sana.
 
 Sumber metodologi lengkap (WAJIB dibaca dulu sebelum eksekusi):
 `${CLAUDE_PLUGIN_ROOT}/core/app-user-guide-generator-core.md`
 
 Skeleton siap-isi — 2 layer, SEMUA hidup di dalam guide (gak ada yang overlay di halaman real
-app), lihat core doc poin 5b buat pola gabungannya:
-- `${CLAUDE_PLUGIN_ROOT}/template/guide-walkthrough.template.html` — markup mock screen (niru UI
-  app asli, bukan screenshot/iframe).
-- `${CLAUDE_PLUGIN_ROOT}/template/guide-tour.template.js` — engine coachmark di atas mock screen
-  itu: spotlight/tooltip granular per kontrol (sampai tombol terkecil), toggle EN/ID, typewriter.
-  Selector-nya WAJIB nunjuk elemen MOCK di dalam guide, bukan elemen app asli.
-  Bareng, dua file ini jadi 1 layer "Guided Tour".
-- `${CLAUDE_PLUGIN_ROOT}/template/GUIDE.template.md` — layer detail lengkap.
+app), lihat core doc poin 5b (A-F) buat pola gabungannya:
+- `${CLAUDE_PLUGIN_ROOT}/template/guide-walkthrough.template.html` — markup mock screen (HALAMAN
+  UTUH niru UI app asli — header/nav/kartu/toolbar, bukan screenshot/iframe/potongan).
+- `${CLAUDE_PLUGIN_ROOT}/template/guide-tour.template.js` — engine coachmark: `runScreen()` (1
+  mock screen) + `runSequence()` (orkestrasi lintas screen — alur berkelanjutan, bar Previous/
+  Replay/Next screen, kartu "Tour complete", localStorage continue) + `verifySelectors()`/
+  `verifyOrder()` (dipanggil manual pas verifikasi, poin F). Teknik highlight: dim elemen lain
+  (opacity turun, TETAP KELIATAN), bukan backdrop gelap. Selector-nya WAJIB nunjuk elemen MOCK di
+  dalam guide (lewat `scope`, bukan `document.querySelector` global).
+- `${CLAUDE_PLUGIN_ROOT}/template/GUIDE.template.md` — layer detail lengkap (termasuk topik "Quick
+  start" — referensi manual self-paced, TERPISAH dari layer Guided Tour di atas).
+- `${CLAUDE_PLUGIN_ROOT}/template/lint-id-text.js` — lint kata casual di teks ID (poin E), WAJIB
+  dijalankan ke semua teks ID yang baru ditulis sebelum declare selesai.
 
 ## Ringkasan alur
 
@@ -56,17 +62,27 @@ app), lihat core doc poin 5b buat pola gabungannya:
    → JS client-side (dialog konfirmasi, pesan validasi) → controller/API (pesan server) →
    constants/enum (nama status/role, mapping `GetLabel()`-style). Kutip string exact — dilarang
    ngarang label yang "kedengerannya masuk akal".
-7. Copy ketiga skeleton (path yang sudah di-resolve di langkah 1, bukan hasil pencarian lain) ke
+7. Copy keempat skeleton (path yang sudah di-resolve di langkah 1, bukan hasil pencarian lain) ke
    folder output di project user, bukan diedit di `${CLAUDE_PLUGIN_ROOT}/template/` langsung:
-   - `guide-walkthrough.template.html` → bangun mock screen (niru UI form/halaman asli, bukan
-     screenshot/iframe, role picker kalau multi-role).
-   - `guide-tour.template.js` → isi array step dengan selector yang nunjuk elemen MOCK di dalam
-     guide itu (1 step per kontrol, termasuk yang terkecil) — pasang di atas mock screen yang baru
-     dibangun, bukan di halaman real app. Dua file ini sama-sama jadi layer "Guided Tour".
-   - `GUIDE.template.md` → isi layer detail lengkap, nempel/terhubung ke layer Guided Tour di atas.
+   - `guide-walkthrough.template.html` → bangun mock screen SEBAGAI HALAMAN UTUH per screen di alur
+     (urutan screen ngikutin status/lifecycle app, cek ke kode — poin D), role picker kalau
+     multi-role, 1 dialog mock contoh dirender statis (no fixed/absolute, no backdrop sendiri).
+   - `guide-tour.template.js` → isi array step per screen, selector nunjuk elemen MOCK (`scope`
+     di-set ke screen itu), urut KAKU posisi visual atas->bawah lalu kiri->kanan (poin D), kontrol
+     yang harus diklik jadi sub-step TERAKHIR. Pasang via `GuideTour.runSequence(screens, opts)`.
+   - `GUIDE.template.md` → isi layer detail (termasuk topik Quick start TERPISAH dari Guided Tour).
+   - Teks ID semua formal baku, pakai "Anda", TANPA slang (poin E) — label UI dikutip persis.
 8. Jangan narasikan proses trial-error pencarian sendiri (percobaan salah, branch yang ke-skip,
    dst) di DALAM dokumen final — itu buat laporan ke user di chat, bukan isi guide.
-9. Sebelum declare selesai: grep hasil akhir cari `{{` yang kelewat, dan cek label tombol/pesan
-   error di guide beneran match sama sumbernya (guide asli atau kode).
+9. **Verifikasi WAJIB sebelum declare selesai (poin F)** — kalau sebagian dikerjakan sub-agent/
+   worker, verifikasi ulang dari sini, jangan percaya mentah-mentah:
+   - Grep hasil akhir cari `{{` yang kelewat, dan cek label tombol/pesan error di guide match sama
+     sumbernya (guide asli atau kode).
+   - Jalankan `GuideTour.verifySelectors(screens)` (browser/jsdom) — semua `found: true`.
+   - Jalankan `GuideTour.verifyOrder(screens)` (browser beneran) — semua `'ok'`.
+   - Jalankan `lint-id-text.js` (`GuideLintID.lintAllScreens(screens)` di browser, atau
+     `node lint-id-text.js steps.json`) — kosong, gak ada kata casual.
+   - Buka tour-nya beneran di browser, semua role: no console error, tiap screen kena tour, tooltip
+     gak nutupin target, gak ada area kosong gede (poin B), gak ada dialog mock numpuk kontrol lain.
 
 Jangan eksekusi kalau scope module/project ambigu — tanya user dulu.

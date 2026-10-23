@@ -31,6 +31,10 @@ paling penting:
    dalam guide, bukan elemen app asli) → layer detail lengkap (skeleton
    `_app-user-guide-generator/template/GUIDE.template.md`).
 5. Jangan narasikan proses trial-error pencarian sendiri di dalam dokumen final.
+6. Verifikasi wajib sebelum selesai (poin 5b-F): `GuideTour.verifySelectors()`/`verifyOrder()`
+   semua lolos, `_app-user-guide-generator/template/lint-id-text.js` buat teks ID (formal, pakai
+   "Anda", tanpa slang), jalanin tour-nya di browser semua role (no console error, no area kosong).
+   Hasil sub-agent/worker verifikasi ulang, jangan percaya mentah.
 
 Kalau module/app yang dimaksud, atau maksud "guide"-nya (cara-pakai vs dokumen domain-bisnis),
 belum jelas, tanya user dulu sebelum mulai investigasi.

@@ -1,20 +1,35 @@
 <!--
-  Skeleton layer "IK interaktif" — pola dari core doc poin 5b. Framework-agnostic: CSS/JS inline,
-  vanilla, gak gantung library apapun, tinggal copy ke dalam modal/halaman guide proyek target dan
-  isi {{PLACEHOLDER}}. Mock UI di sini styling-nya generic (abu-abu/putih) — GANTI warna/komponen
-  biar niru tampilan form asli project target (jangan dipakai mentah-mentah warnanya).
+  Skeleton layer "Guided Tour" — pola dari core doc poin 5b. Framework-agnostic: CSS/JS inline,
+  vanilla, gak gantung library apapun. Dipasangkan sama template/guide-tour.template.js (engine
+  spotlight/tooltip/orkestrasi-lintas-screen). SEMUA ini hidup DI DALAM guide/modal "User Guide" —
+  gak pernah nyuntik apapun ke halaman real app.
 
-  Struktur: role picker (opsional, skip kalau module cuma 1 role) -> walkthrough (progress dots +
-  step panel: mock UI, target di-highlight, tombol reveal "what happens", Back/Next).
-  Layer detail (poin 5: Overview/Roles/Lifecycle/step-by-step/Button index/FAQ) nempel di luar file
-  ini, biasanya sebagai tab/nav terpisah di modal/halaman guide yang sama — lihat
-  template/GUIDE.template.md buat kontennya.
+  Struktur (poin 5b-A): Guided Tour = topik PERTAMA & default saat guide dibuka. Role picker (kalau
+  module-nya multi-role) -> tour jalan otomatis lintas mock screen, berkelanjutan (abis 1 screen,
+  bar Previous/Replay/Next-screen, gak perlu klik tambahan buat lanjut) -> kartu "Tour complete" di
+  screen terakhir. "Quick start" (referensi manual self-paced, BUKAN interaktif) tetap ada sebagai
+  topik TERPISAH di layer detail (lihat template/GUIDE.template.md) — bukan di file ini.
+
+  Layout (poin 5b-B): section ini WAJIB full-width mengikuti lebar modal — gak ada max-width sempit
+  di sini, mock screen juga gak dibatasi tinggi tetap. Tes di viewport 1366 / 1920 / mobile.
+
+  Mock screen (poin 5b-C): tiap screen = HALAMAN UTUH (header/topbar, nav, kartu, panel, toolbar
+  dengan urutan & proporsi kayak halaman asli) — bukan cuma 1 tombol doang. Elemen yang lagi
+  dijelaskan di-highlight (engine yang nambahin class, lihat guide-tour.template.js), sisanya
+  diredupkan TAPI TETAP KELIATAN sebagai konteks (opacity turun, bukan ditutup backdrop). Dialog
+  mock di dalam screen (division class .gw-dialog) dirender STATIS di alur dokumen — tanpa
+  position:fixed/absolute, tanpa backdrop sendiri — contoh ada di screen "list" di bawah.
+
+  Urutan (poin 5b-D): `data-mock` di tiap kontrol WAJIB diberi step di guide-tour.template.js secara
+  urut posisi visual atas->bawah lalu kiri->kanan; kontrol yang mesti diklik user jadi sub-step
+  TERAKHIR screen itu (tanpa melanggar urutan visual demi itu) — ini aturan pengarangan konten,
+  dicek pakai GuideTour.verifyOrder() (lihat komentar di guide-tour.template.js).
 -->
 <div class="gw-root" id="gwRoot">
 
   <!-- ── Role picker (hapus kalau module cuma 1 persona) ─────────────────── -->
   <div class="gw-roles" id="gwRoles">
-    <p class="gw-roles__lead">Pilih peran Anda buat mulai simulasi:</p>
+    <p class="gw-roles__lead">{{ROLE_PICKER_LEAD}}</p>
     <div class="gw-roles__grid">
       <button type="button" class="gw-role" data-role="{{ROLE_1_KEY}}">
         <span class="gw-role__title">{{ROLE_1_LABEL}}</span>
@@ -28,122 +43,124 @@
     </div>
   </div>
 
-  <!-- ── Walkthrough per role (satu blok per data-role, disembunyiin sampe role dipilih) ── -->
+  <!-- ── Tour per role (satu blok per data-role, disembunyiin sampe role dipilih) ── -->
   <div class="gw-walk" data-walk-for="{{ROLE_1_KEY}}" hidden>
 
-    <div class="gw-progress">
-      <span class="gw-progress__dot gw-progress__dot--current" data-step="1"></span>
-      <span class="gw-progress__dot" data-step="2"></span>
-      <span class="gw-progress__dot" data-step="3"></span>
-      <!-- ... 1 dot per langkah ... -->
-    </div>
-
-    <!-- Satu .gw-step per langkah; cuma yang .gw-step--current yang keliatan. Isi di dalam
-         .gw-step__scroll boleh sepanjang apapun — itu yang scroll, judul & nav tetep keliatan. -->
-    <section class="gw-step gw-step--current" data-step="1">
-      <h3 class="gw-step__title">{{STEP_1_TITLE}}</h3>
-
-      <div class="gw-step__scroll">
-        <!-- data-typewriter: teks aslinya di sini, JS yang nge-type-in pas step ini aktif -->
-        <p class="gw-step__instruction" data-typewriter>{{STEP_1_INSTRUCTION}}</p>
-
-        <!-- Mock UI — niru layout form asli pakai markup biasa, styling disesuaikan per project -->
-        <div class="gw-mock">
-          <div class="gw-mock__row">
-            <label class="gw-mock__field">{{FIELD_LABEL}}
-              <span class="gw-mock__input">{{FIELD_EXAMPLE_VALUE}}</span>
-            </label>
-            <!-- target yang mesti diklik user di langkah ini -->
-            <button type="button" class="gw-mock__btn gw-hl" data-reveal="reveal-1">
-              {{BUTTON_LABEL}}
-            </button>
-          </div>
-        </div>
-
-        <!-- Reveal panel: disembunyiin sampe tombol di-highlight itu diklik -->
-        <div class="gw-reveal" id="reveal-1" hidden>
-          <p class="gw-reveal__label">Yang terjadi setelah diklik:</p>
-          <div class="gw-reveal__dialog">{{MOCK_DIALOG_OR_RESULT_TEXT}}</div>
-        </div>
+    <!-- Mock screen 1 — HALAMAN UTUH, bukan potongan. Struktur contoh: topbar + sidebar nav +
+         content (toolbar + kartu/tabel) + 1 dialog mock statis di alur dokumen. Ganti proporsi/
+         komponennya biar niru layout app asli — jangan buang bagian manapun demi "ringkas", itu
+         yang bikin tour kerasa gak mirip aplikasi aslinya. -->
+    <section class="gw-mockpage" id="gwMockScreenList">
+      <div class="gw-mp-topbar" data-mock="navTopbar">
+        <span class="gw-mp-brand">{{APP_NAME}}</span>
+        <span class="gw-mp-user">{{USER_BADGE}}</span>
       </div>
+      <div class="gw-mp-body">
+        <nav class="gw-mp-side" data-mock="navSidebar">
+          <div class="gw-mp-navitem gw-mp-navitem--active" data-mock="navRacer">{{NAV_GROUP_LABEL}}</div>
+          <div class="gw-mp-navitem" data-mock="navOther">{{OTHER_NAV_LABEL}}</div>
+        </nav>
+        <main class="gw-mp-main">
+          <div class="gw-mp-toolbar">
+            <h4 class="gw-mp-title">{{SCREEN_1_TITLE}}</h4>
+            <button type="button" class="gw-mp-btn gw-mp-btn--primary" data-mock="btnAddFlexForm">{{ADD_BUTTON_LABEL}}</button>
+          </div>
+          <table class="gw-mp-table">
+            <thead><tr><th>{{COL_1}}</th><th>{{COL_2}}</th><th>{{COL_3}}</th></tr></thead>
+            <tbody>
+              <tr data-mock="rowExample1"><td>{{ROW_1_VAL_1}}</td><td>{{ROW_1_VAL_2}}</td><td>{{ROW_1_VAL_3}}</td></tr>
+            </tbody>
+          </table>
 
-      <div class="gw-nav">
-        <button type="button" class="gw-nav__back" disabled>Kembali</button>
-        <button type="button" class="gw-nav__next">Lanjut</button>
+          <!-- Dialog mock STATIS (bukan position:fixed/absolute, bukan backdrop sendiri) — muncul
+               di alur dokumen, sebagai bagian hasil setelah kontrol di atas "diklik". Disembunyiin
+               via `hidden` + `data-mock-result`, engine auto-reveal pas sub-step terakhir screen
+               ini kelar (lihat core doc poin 5b-A + fungsi autoReveal di guide-tour.template.js). -->
+          <div class="gw-dialog" data-mock-result hidden>
+            <p class="gw-dialog__title">{{RESULT_DIALOG_TITLE}}</p>
+            <p class="gw-dialog__text">{{RESULT_DIALOG_TEXT}}</p>
+          </div>
+        </main>
       </div>
     </section>
 
-    <!-- ... ulangi <section class="gw-step" data-step="2"> dst, tanpa class --current ... -->
+    <!-- Mock screen 2 dst — pola sama, ganti isinya sesuai halaman berikutnya di alur. Harus
+         `hidden` sampai GuideTour.runSequence pindah ke sini (lewat scope yang beda per screen). -->
+    <section class="gw-mockpage" id="gwMockScreenDetail" hidden>
+      <!-- ... struktur halaman penuh screen berikutnya ... -->
+    </section>
 
+    <!-- Tempat engine nge-render bar "Previous screen / Replay / Next screen" & kartu "Tour
+         complete" (lihat GuideTour.runSequence, parameter `container`). Full-width, gak ada
+         max-width di sini. -->
+    <div id="gwScreenBar"></div>
   </div>
   <!-- ... ulangi blok .gw-walk per role ... -->
 
 </div>
 
 <style>
+  /* Full-width, SENGAJA gak ada max-width di root/walk/mockpage manapun (poin 5b-B) — section ini
+     ngisi seluruh lebar modal, gak nyisain area kosong gede di kanan. Tes di 1366/1920/mobile. */
+  .gw-root, .gw-walk, .gw-mockpage, #gwScreenBar { width: 100%; box-sizing: border-box; }
   .gw-root { font: 14px/1.5 system-ui, sans-serif; color: #2b3230; }
 
   .gw-roles__lead { font-weight: 600; margin-bottom: .6rem; }
-  .gw-roles__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .gw-roles__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
   .gw-role { text-align: left; border: 1px solid #dde4e0; background: #fff; border-radius: 12px;
     padding: 12px 14px; cursor: pointer; transition: all .15s; }
   .gw-role:hover { border-color: #1f9d57; transform: translateY(-2px); }
   .gw-role__title { display: block; font-weight: 700; }
   .gw-role__desc { display: block; font-size: .85em; color: #6c757d; margin-top: 2px; }
 
-  .gw-progress { display: flex; gap: 6px; margin-bottom: 1rem; }
-  .gw-progress__dot { flex: 1; height: 6px; border-radius: 3px; background: #e3e8e5; }
-  .gw-progress__dot--done { background: #9bd5b5; }
-  .gw-progress__dot--current { background: #1f9d57; }
+  /* mock page — GANTI token warna/radius/font ini biar niru theme app target. Gak ada max-height
+     tetap: tinggi ngikutin konten (poin 5b-B). */
+  .gw-mockpage { border: 1px solid #dde4e0; border-radius: 10px; overflow: hidden; background: #fff; }
+  .gw-mp-topbar { display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 16px; background: #1b2523; color: #fff; font-weight: 600; }
+  .gw-mp-user { font-size: .8em; opacity: .85; font-weight: 400; }
+  .gw-mp-body { display: flex; min-height: 320px; }
+  .gw-mp-side { flex: 0 0 180px; border-right: 1px solid #e3e8e5; background: #f6f8f7; padding: 10px 0; }
+  .gw-mp-navitem { padding: 9px 16px; font-size: 13px; color: #5e6b66; cursor: default; }
+  .gw-mp-navitem--active { background: #e8f6ee; color: #1f9d57; font-weight: 600;
+    border-left: 3px solid #1f9d57; }
+  .gw-mp-main { flex: 1; min-width: 0; padding: 16px 20px; }
+  .gw-mp-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+  .gw-mp-title { margin: 0; }
+  .gw-mp-btn { border: 0; border-radius: 8px; padding: 8px 16px; font-weight: 600; cursor: default; }
+  .gw-mp-btn--primary { background: #1f9d57; color: #fff; }
+  .gw-mp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .gw-mp-table th { text-align: left; padding: 8px 10px; border-bottom: 1px solid #e3e8e5; color: #5e6b66; font-weight: 600; }
+  .gw-mp-table td { padding: 8px 10px; border-bottom: 1px solid #f0f3f1; }
 
-  /* .gw-walk sendiri kasih tinggi maksimum ke seluruh panel walkthrough (ganti sesuai modal/halaman
-     target) — nav Back/Lanjut selalu keliatan, yang scroll cuma isi step (.gw-step__scroll). */
-  .gw-walk { display: flex; flex-direction: column; max-height: var(--gw-max-h, 70vh); }
-  .gw-walk[hidden] { display: none; } /* [hidden] kalah specificity sama display:flex di atas kalau gak ditulis eksplisit */
-  .gw-step { display: none; flex-direction: column; min-height: 0; flex: 1; }
-  .gw-step--current { display: flex; }
-  .gw-step__title { margin: 0 0 .25rem; flex: none; }
-  .gw-step__scroll { overflow-y: auto; flex: 1; min-height: 0; padding-right: 4px; }
-  .gw-step__instruction { color: #5e6b66; margin: 0 0 .8rem; min-height: 1.2em; }
-  .gw-step__instruction .gw-caret { display: inline-block; width: .5em; opacity: .6;
-    animation: gwCaret .8s step-end infinite; }
-  @keyframes gwCaret { 50% { opacity: 0; } }
-  .gw-nav { flex: none; padding-top: .6rem; }
+  /* Dialog mock STATIS di alur dokumen — sengaja TIDAK position:fixed/absolute, TIDAK ada backdrop
+     sendiri (poin 5b-C). Harus gak numpuk di atas kontrol lain krn dia dorong layout normal. */
+  .gw-dialog { margin-top: 14px; border: 1px solid #cfe9da; border-left: 4px solid #1f9d57;
+    border-radius: 10px; background: #f1faf5; padding: 12px 16px; }
+  .gw-dialog__title { font-weight: 700; margin: 0 0 4px; color: #1f5a37; }
+  .gw-dialog__text { margin: 0; color: #5e6b66; }
 
-  /* mock UI — GANTI token warna/radius ini biar niru theme project target */
-  .gw-mock { border: 1px solid #dde4e0; border-radius: 10px; background: #fafcfb; padding: 14px;
-    display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: .8rem; }
-  .gw-mock__row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; width: 100%; }
-  .gw-mock__field { display: flex; flex-direction: column; gap: 4px; font-size: .85em; color: #6c757d; }
-  .gw-mock__input { background: #fff; border: 1px solid #cfd6d2; border-radius: 6px; padding: 5px 10px;
-    color: #2b3230; min-width: 140px; }
-  .gw-mock__btn { border: 0; border-radius: 8px; padding: 8px 16px; font-weight: 600; cursor: pointer;
-    background: #1f9d57; color: #fff; }
-
-  /* elemen yang harus diklik tiap langkah — pulsing highlight, INI yang bikin kerasa "game tutorial" */
-  .gw-hl { outline: 3px solid rgba(255, 159, 67, .9); outline-offset: 3px;
-    animation: gwPulse 1.6s ease-in-out infinite; }
-  @keyframes gwPulse { 0%, 100% { outline-color: rgba(255, 159, 67, .9); } 50% { outline-color: rgba(255, 159, 67, .2); } }
-  @media (prefers-reduced-motion: reduce) { .gw-hl { animation: none; } }
-
-  .gw-reveal { background: #eef7f1; border: 1px solid #cfe9da; border-left: 4px solid #1f9d57;
-    border-radius: 10px; padding: 10px 14px; margin-bottom: .8rem; }
-  .gw-reveal__label { font-size: .72rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .06em; color: #1f9d57; margin: 0 0 4px; }
-  .gw-reveal__dialog { background: #fff; border: 1px dashed #b9c4be; border-radius: 8px; padding: 10px 12px; }
-
-  .gw-nav { display: flex; justify-content: space-between; }
-  .gw-nav button { border: 1px solid #1f9d57; background: #fff; color: #1f9d57; border-radius: 8px;
-    padding: 6px 16px; font-weight: 600; cursor: pointer; }
-  .gw-nav button:not(:disabled):hover, .gw-nav__next { background: #1f9d57; color: #fff; }
-  .gw-nav button:disabled { opacity: .35; cursor: default; }
+  @media (max-width: 720px) {
+    .gw-mp-body { flex-direction: column; }
+    .gw-mp-side { flex: none; display: flex; overflow-x: auto; border-right: 0; border-bottom: 1px solid #e3e8e5; }
+  }
 </style>
 
 <script>
-  // Vanilla, no deps. Wiring: role pick -> show walkthrough, reveal-on-click, Back/Next step nav.
+  // Vanilla, no deps. Role picker -> GuideTour.runSequence per role. Spotlight/tooltip/urutan
+  // screen semuanya ditangani guide-tour.template.js (include file itu SEBELUM script ini).
   (function () {
     var root = document.getElementById('gwRoot');
-    if (!root) return;
+    if (!root || !window.GuideTour) return;
+
+    function screensFor(role) {
+      // GANTI: isi step list per mock screen punya role ini. Lihat contoh lengkap di komentar
+      // paling bawah guide-tour.template.js.
+      return [
+        { screenKey: role + '-list', scope: '#gwMockScreenList', steps: [/* ... */] },
+        { screenKey: role + '-detail', scope: '#gwMockScreenDetail', steps: [/* ... */] },
+      ];
+    }
 
     root.querySelectorAll('.gw-role').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -152,78 +169,24 @@
         var walk = root.querySelector('.gw-walk[data-walk-for="' + role + '"]');
         if (!walk) return;
         walk.hidden = false;
-        // baru di titik ini walk keliatan — typewriter step 1 dipicu sekarang, bukan dari awal
-        // load (biar efek "ngetik"-nya kelihatan, bukan selesai duluan pas masih disembunyiin)
-        var firstInstruction = walk.querySelector('.gw-step .gw-step__instruction');
-        if (firstInstruction && typeof typewrite === 'function') typewrite(firstInstruction);
-      });
-    });
 
-    root.querySelectorAll('.gw-hl[data-reveal]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var panel = document.getElementById(btn.dataset.reveal);
-        if (panel) panel.hidden = false;
-      });
-    });
-
-    // Typewriter: isi teks dikit-dikit, kayak dialog game tutorial jalan sendiri. Kalau user minta
-    // reduced motion, langsung tampil penuh (gak dipaksa nunggu animasi).
-    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    function typewrite(el) {
-      if (!el || el.dataset.typed) return;
-      var full = el.textContent;
-      if (reduceMotion) { el.dataset.typed = '1'; return; }
-      el.dataset.typed = '1';
-      el.textContent = '';
-      var caret = document.createElement('span');
-      caret.className = 'gw-caret';
-      caret.textContent = '▌';
-      el.appendChild(caret);
-      var i = 0;
-      var speed = 18; // ms per karakter — ganti kalau kerasa kecepetan/kelamaan
-      var timer = setInterval(function () {
-        if (i >= full.length) {
-          clearInterval(timer);
-          caret.remove();
-          return;
-        }
-        caret.insertAdjacentText('beforebegin', full[i]);
-        i++;
-      }, speed);
-    }
-
-    root.querySelectorAll('.gw-walk').forEach(function (walk) {
-      var steps = Array.prototype.slice.call(walk.querySelectorAll('.gw-step'));
-      var dots = Array.prototype.slice.call(walk.querySelectorAll('.gw-progress__dot'));
-
-      function goTo(index) {
-        steps.forEach(function (s, i) { s.classList.toggle('gw-step--current', i === index); });
-        dots.forEach(function (d, i) {
-          d.classList.toggle('gw-progress__dot--current', i === index);
-          d.classList.toggle('gw-progress__dot--done', i < index);
+        GuideTour.runSequence(screensFor(role), {
+          tourId: 'guide-' + role,
+          container: walk.querySelector('#gwScreenBar'),
+          onChangeRole: function () {
+            walk.hidden = true;
+            root.querySelector('#gwRoles').hidden = false;
+          },
+          onOpenDetail: function () {
+            // GANTI: panggil navigasi ke topik detail guide (nav/search layer di
+            // template/GUIDE.template.md), misal: document.querySelector('[data-guide-nav="detail"]').click()
+          },
+          onSkip: function () {
+            walk.hidden = true;
+            root.querySelector('#gwRoles').hidden = false;
+          },
         });
-        var current = steps[index];
-        if (current) {
-          var scrollArea = current.querySelector('.gw-step__scroll');
-          if (scrollArea) scrollArea.scrollTop = 0;
-          typewrite(current.querySelector('.gw-step__instruction'));
-        }
-      }
-
-      walk.querySelectorAll('.gw-nav__next').forEach(function (btn, i) {
-        btn.addEventListener('click', function () { goTo(Math.min(i + 1, steps.length - 1)); });
       });
-      walk.querySelectorAll('.gw-nav__back').forEach(function (btn, i) {
-        btn.addEventListener('click', function () { goTo(Math.max(i - 1, 0)); });
-      });
-
-      // Kalau walk ini KEBUKA dari awal (gak lewat role picker, module cuma 1 persona) — tipe-in
-      // step 1 langsung. Kalau masih `hidden` (nunggu role dipilih), biar handler klik role di atas
-      // yang mulai typewriter-nya pas walk-nya beneran keliatan.
-      if (!walk.hidden) {
-        var first = steps[0];
-        if (first) typewrite(first.querySelector('.gw-step__instruction'));
-      }
     });
   })();
 </script>

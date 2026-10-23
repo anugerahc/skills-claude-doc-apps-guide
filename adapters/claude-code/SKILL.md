@@ -8,10 +8,11 @@ description: Use when asked to write, generate, or extract an end-user guide / h
 Sumber metodologi lengkap (WAJIB dibaca dulu sebelum eksekusi): `../../core/app-user-guide-generator-core.md`
 
 Skeleton siap-isi — 2 layer, SEMUA di dalam guide (gak ada yang overlay di halaman real app), lihat
-core doc poin 5b: `../../template/guide-walkthrough.template.html` (mock screen markup) +
-`../../template/guide-tour.template.js` (engine coachmark granular — spotlight/tooltip per kontrol
-di mock screen itu, EN/ID) jadi 1 layer "Guided Tour", ditambah `../../template/GUIDE.template.md`
-(layer detail lengkap).
+core doc poin 5b (A-F): `../../template/guide-walkthrough.template.html` (mock screen — HALAMAN
+UTUH, bukan potongan) + `../../template/guide-tour.template.js` (engine `runScreen`/`runSequence`
+— granular, EN/ID, alur berkelanjutan lintas screen) jadi layer "Guided Tour" (topik PERTAMA &
+default, terpisah dari Quick start), ditambah `../../template/GUIDE.template.md` (layer detail) dan
+`../../template/lint-id-text.js` (lint kata casual teks ID, wajib dijalankan sebelum selesai).
 
 ## Ringkasan alur
 
@@ -29,5 +30,9 @@ di mock screen itu, EN/ID) jadi 1 layer "Guided Tour", ditambah `../../template/
    (`template/GUIDE.template.md`) — poin 5b core doc. Gak ada yang nyuntik overlay ke halaman real
    app di luar guide.
 5. Jangan narasikan proses trial-error pencarian sendiri di dalam dokumen final.
+6. Verifikasi wajib sebelum selesai (poin 5b-F core doc): `GuideTour.verifySelectors()` (semua
+   ketemu), `GuideTour.verifyOrder()` (semua urut), `lint-id-text.js` (teks ID bersih dari slang),
+   jalanin tour-nya beneran di browser (semua role, no console error, no area kosong, poin B/C).
+   Kalau sebagian guide dikerjakan sub-agent/worker, verifikasi ulang — jangan percaya mentah.
 
 Jangan eksekusi kalau scope module/project ambigu — tanya user dulu.

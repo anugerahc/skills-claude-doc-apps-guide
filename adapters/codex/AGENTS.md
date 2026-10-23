@@ -24,4 +24,8 @@ Saat user minta dibuatkan user guide/dokumentasi cara-pakai untuk sebuah module:
    MOCK di dalam guide, bukan elemen app asli; granular, EN/ID) → detail lengkap (skeleton
    `_app-user-guide-generator/template/GUIDE.template.md`).
 6. Jangan narasikan proses trial-error pencarian sendiri di dalam dokumen final.
-7. Kalau module/app atau maksud "guide"-nya ambigu, tanya user dulu sebelum mulai.
+7. Verifikasi wajib sebelum selesai (poin 5b-F): `GuideTour.verifySelectors()`/`verifyOrder()`
+   semua lolos, `_app-user-guide-generator/template/lint-id-text.js` buat teks ID (formal, pakai
+   "Anda", tanpa slang), jalanin tour-nya di browser semua role (no console error). Hasil
+   sub-agent/worker verifikasi ulang, jangan percaya mentah.
+8. Kalau module/app atau maksud "guide"-nya ambigu, tanya user dulu sebelum mulai.

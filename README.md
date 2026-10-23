@@ -11,8 +11,9 @@ ChatGPT/Gemini.
 ```
 core/app-user-guide-generator-core.md   ← metodologi lengkap (sumber kebenaran tunggal)
 template/guide-walkthrough.template.html ← mock screen (layer "Guided Tour", niru UI app asli — SEMUA di dalam guide)
-template/guide-tour.template.js         ← engine coachmark di atas mock screen itu (spotlight/tooltip granular, EN/ID)
-template/GUIDE.template.md              ← skeleton layer detail lengkap
+template/guide-tour.template.js         ← engine coachmark (runScreen/runSequence, dim-not-backdrop, alur berkelanjutan lintas screen)
+template/GUIDE.template.md              ← skeleton layer detail lengkap (termasuk topik Quick start, terpisah dari Guided Tour)
+template/lint-id-text.js                ← lint kata casual di teks ID, wajib dijalankan sebelum guide dianggap selesai
 adapters/                                ← file aktivasi per tool (Claude Code, Antigravity, Kiro, Cursor, Codex)
 install.sh / install.ps1                 ← installer otomatis, deteksi tool & pasang adapter yang cocok
 INSTALL.md                               ← panduan instalasi manual (kalau gak mau pakai script)

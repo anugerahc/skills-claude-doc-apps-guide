@@ -22,4 +22,8 @@ Ringkasan cepat:
   elemen MOCK di dalam guide, granular, EN/ID) → detail lengkap (skeleton
   `_app-user-guide-generator/template/GUIDE.template.md`).
 - Jangan narasikan proses trial-error pencarian sendiri di dalam dokumen final.
+- Verifikasi wajib (poin 5b-F): `GuideTour.verifySelectors()`/`verifyOrder()` semua lolos,
+  `_app-user-guide-generator/template/lint-id-text.js` buat teks ID (formal, pakai "Anda", tanpa
+  slang), jalanin tour-nya di browser semua role (no console error). Hasil sub-agent/worker
+  verifikasi ulang, jangan percaya mentah.
 - Module/app atau maksud "guide" ambigu → tanya user dulu, jangan asumsi.

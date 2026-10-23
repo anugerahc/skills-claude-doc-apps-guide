@@ -4,27 +4,38 @@
  * PENTING — target-nya SELALU elemen di dalam guide/modal "User Guide" itu sendiri (mock screen
  * hand-built dari template/guide-walkthrough.template.html), BUKAN PERNAH elemen di halaman real
  * app yang sedang dipakai user buat kerja beneran. Guide gak boleh nyuntik overlay ke luar dirinya
- * sendiri. `selector` di tiap step harus nunjuk ke elemen mock di dalam markup guide (misal
- * `#gwRoot [data-mock="btnSubmit"]`), bukan ke `document.querySelector('#btnSubmit')` punya
- * halaman asli.
+ * sendiri. `selector` di tiap sub-step di-resolve via `scope.querySelector(selector)` — scope WAJIB
+ * di-pass eksplisit (elemen atau selector string), BUKAN `document.querySelector` global.
  *
- * "pageKey" di bawah ini artinya MOCK SCREEN di dalam guide (lihat .gw-walk/.gw-step di
- * guide-walkthrough.template.html) — bukan halaman browser beneran. State di localStorage cuma
- * dipakai biar kalau modal guide ditutup-buka lagi, posisi tour-nya keinget; itu bukan mekanisme
- * buat "ngikutin" navigasi real app.
+ * Teknik highlight: BUKAN backdrop gelap + "lubang" spotlight (itu nutupin konteks sekitarnya).
+ * Sebagai gantinya: semua elemen lain di dalam scope diredupkan (opacity turun, bukan
+ * position:fixed apapun), target dapet outline + tetap full-opacity — konteks sekitarnya tetap
+ * KELIATAN, cuma gak jadi pusat perhatian. Gak ada elemen position:fixed/absolute yang dibikin
+ * buat efek ini — aman dipakai bareng dialog/modal mock yang statis di alur dokumen.
  *
- * API:
- *   GuideTour.init(steps, { tourId, pageKey, lang })
- *     -> daftarin tour buat mock screen ini (satu .gw-step/.gw-walk block). Auto-mulai dari step 1
- *        KALAU tour-nya belum pernah di-dismiss DAN mock screen ini belum pernah "selesai"
- *        di-tour sebelumnya.
- *   GuideTour.start(steps, { tourId, pageKey, lang })
- *     -> paksa mulai dari step 1 TERLEPAS dari state tersimpan. Pasang ini ke tombol
- *        "Mulai Tour"/"Take a Tour" manual di dalam guide.
+ * Dua lapis API:
+ *   GuideTour.runScreen(steps, opts) — jalanin satu urutan sub-step (1 mock screen). opts:
+ *     { scope, tourId, screenKey, lang, lastButtonLabel:{en,id}, onFinish(), onSkip() }
+ *     `lastButtonLabel` override teks tombol di sub-step TERAKHIR screen ini (defaultnya
+ *     "Lanjut"/"Next" biasa — di alur berkelanjutan biasanya diganti jadi "Lihat hasil"/"See
+ *     result" karena abis ini BUKAN akhir tour, cuma akhir screen itu).
+ *   GuideTour.runSequence(screens, opts) — orkestrasi lintas screen (lihat core doc poin 5b-A):
+ *     screens = [{ screenKey, scope, steps, resultLabel? }, ...]
+ *     opts = { tourId, lang, onChangeRole(), onOpenDetail(), container }
+ *     Abis 1 screen selesai (sub-step terakhir diklik): auto reveal elemen hasil
+ *     ([hidden][data-mock-result] di dalam scope screen itu kalau ada), lalu render bar
+ *     "Previous screen / Replay / Next screen" (di dalam `container` — elemen yang disediakan
+ *     integrator buat nampung UI bar ini, biasanya tepat di bawah mock screen). "Next screen"
+ *     langsung mulai tour screen berikutnya, gak perlu klik tambahan lain. Screen terakhir ->
+ *     kartu "Tour complete" (Replay / Change role / Open detail topic). Posisi terakhir
+ *     (index screen + lang) ke-save localStorage; `GuideTour.getSavedProgress(tourId)` buat cek
+ *     ada progress tersimpan sebelum nawarin "Continue".
  *
- * steps: [{ selector: 'CSS selector elemen mock DI DALAM GUIDE', en: { title, text }, id: { title, text } }, ...]
- * Granularitas: SATU step per kontrol di mock screen itu — termasuk tombol kecil/icon-only, bukan
- * cuma aksi utama (poin 5b core doc).
+ * Helper verifikasi (poin 5b-F core doc, dipanggil manual pas ngetes, bukan bagian runtime guide):
+ *   GuideTour.verifySelectors(screens) -> { screenKey: [ { selector, found } ] } — jalan di jsdom
+ *     atau browser; cuma cek elemen ketemu/gaknya, gak butuh elemen keliatan.
+ *   GuideTour.verifyOrder(screens) -> { screenKey: [ 'ok' | 'OUT OF ORDER: ...' ] } — BUTUH browser
+ *     beneran (pakai getBoundingClientRect), jsdom ngasih 0 buat semua rect jadi gak valid di situ.
  */
 (function (global) {
   'use strict';
@@ -34,35 +45,25 @@
 
   function ls(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
   function lsSet(key, val) { try { localStorage.setItem(key, val); } catch (e) {} }
+  function lsDel(key) { try { localStorage.removeItem(key); } catch (e) {} }
 
-  function getState(tourId) {
-    var doneKeysRaw = ls(LS_PREFIX + tourId + ':doneKeys');
-    return {
-      dismissed: ls(LS_PREFIX + tourId + ':dismissed') === '1',
-      doneKeys: doneKeysRaw ? JSON.parse(doneKeysRaw) : [],
-      lang: ls(LS_PREFIX + tourId + ':lang') || null,
-    };
-  }
-  function setLang(tourId, lang) { lsSet(LS_PREFIX + tourId + ':lang', lang); }
-  function setDismissed(tourId) { lsSet(LS_PREFIX + tourId + ':dismissed', '1'); }
-  function markPageDone(tourId, pageKey) {
-    var state = getState(tourId);
-    if (state.doneKeys.indexOf(pageKey) === -1) {
-      state.doneKeys.push(pageKey);
-      lsSet(LS_PREFIX + tourId + ':doneKeys', JSON.stringify(state.doneKeys));
-    }
+  function resolveScope(scope) {
+    if (!scope) return document;
+    if (typeof scope === 'string') return document.querySelector(scope);
+    return scope;
   }
 
+  // ── style (sekali injek) ──────────────────────────────────────────────────────────────────
   var STYLE_ID = 'guide-tour-style';
   function injectStyle() {
     if (document.getElementById(STYLE_ID)) return;
     var css = ''
-      + '.gt-backdrop{position:fixed;inset:0;z-index:99990;background:transparent;pointer-events:auto;}'
-      + '.gt-spot{position:fixed;z-index:99991;border-radius:8px;box-shadow:0 0 0 9999px rgba(10,15,13,.6);'
-      + '  transition:' + (reduceMotion ? 'none' : 'top .25s ease,left .25s ease,width .25s ease,height .25s ease') + ';'
-      + '  pointer-events:none;outline:2px solid #ffb648;outline-offset:3px;}'
-      + '.gt-tip{position:fixed;z-index:99992;max-width:320px;background:#fff;border-radius:12px;'
-      + '  box-shadow:0 12px 32px rgba(0,0,0,.25);padding:14px 16px;font:14px/1.5 system-ui,sans-serif;color:#2b3230;}'
+      + '.gw-tour-active .gw-dim{opacity:.38;filter:grayscale(45%);transition:' + (reduceMotion ? 'none' : 'opacity .22s ease,filter .22s ease') + ';}'
+      + '.gw-tour-active .gw-target{position:relative;z-index:2;outline:3px solid #ffb648;outline-offset:3px;'
+      + '  border-radius:6px;' + (reduceMotion ? '' : 'animation:gwTargetPulse 1.6s ease-in-out infinite;') + '}'
+      + '@keyframes gwTargetPulse{0%,100%{outline-color:rgba(255,182,72,1);}50%{outline-color:rgba(255,182,72,.35);}}'
+      + '.gt-tip{position:fixed;z-index:99992;width:320px;max-width:calc(100vw - 24px);background:#fff;border-radius:12px;'
+      + '  box-shadow:0 12px 32px rgba(0,0,0,.22);padding:14px 16px;font:14px/1.5 system-ui,sans-serif;color:#2b3230;}'
       + '.gt-tip__title{font-weight:700;margin:0 0 4px;}'
       + '.gt-tip__text{margin:0 0 10px;color:#5e6b66;min-height:1.2em;}'
       + '.gt-tip__progress{font-size:11px;color:#8a948f;margin-bottom:8px;}'
@@ -75,7 +76,19 @@
       + '  text-decoration:underline;padding:5px 0 !important;}'
       + '.gt-tip__lang{border:0 !important;background:none !important;color:#8a948f !important;font-size:11px !important;'
       + '  padding:2px 6px !important;}'
-      + '.gt-tip__lang.active{color:#1f9d57 !important;font-weight:700;}';
+      + '.gt-tip__lang.active{color:#1f9d57 !important;font-weight:700;}'
+      // Bar antar-screen & kartu "Tour complete" — full-width, gak ngasih max-width sempit (poin 5b-B).
+      + '.gt-screenbar{display:flex;justify-content:space-between;align-items:center;gap:10px;'
+      + '  width:100%;padding:12px 2px 2px;flex-wrap:wrap;}'
+      + '.gt-screenbar button{border:1px solid #1f9d57;background:#fff;color:#1f9d57;border-radius:8px;'
+      + '  padding:7px 16px;font-size:13px;font-weight:600;cursor:pointer;}'
+      + '.gt-screenbar button.gt-primary{background:#1f9d57;color:#fff;}'
+      + '.gt-screenbar button:disabled{opacity:.35;cursor:default;}'
+      + '.gt-complete{width:100%;text-align:center;padding:28px 16px;border:1px dashed #cfe9da;'
+      + '  border-radius:12px;background:#f1faf5;}'
+      + '.gt-complete h3{margin:0 0 6px;}'
+      + '.gt-complete p{margin:0 0 16px;color:#5e6b66;}'
+      + '.gt-complete .gt-row{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;}';
     var style = document.createElement('style');
     style.id = STYLE_ID;
     style.textContent = css;
@@ -93,77 +106,103 @@
     }, 14);
   }
 
-  function runTour(steps, opts, forceStart) {
-    var tourId = opts.tourId;
-    var pageKey = opts.pageKey;
-    var state = getState(tourId);
-
-    if (!forceStart) {
-      if (state.dismissed) return null;
-      if (state.doneKeys.indexOf(pageKey) !== -1) return null;
+  // Redupin semua elemen di `scopeEl` KECUALI target & ancestor/descendant-nya. Gak ada backdrop/
+  // elemen baru yang dibikin — murni toggle class di elemen yang udah ada di DOM.
+  function applyDimTarget(scopeEl, targetEl) {
+    scopeEl.classList.add('gw-tour-active');
+    var keepAncestors = [];
+    var n = targetEl;
+    while (n && n !== scopeEl) { keepAncestors.push(n); n = n.parentElement; }
+    var all = scopeEl.querySelectorAll('*');
+    for (var i = 0; i < all.length; i++) {
+      var el = all[i];
+      el.classList.remove('gw-target');
+      if (el === targetEl || keepAncestors.indexOf(el) !== -1 || targetEl.contains(el)) {
+        el.classList.remove('gw-dim');
+      } else {
+        el.classList.add('gw-dim');
+      }
     }
+    targetEl.classList.add('gw-target');
+  }
+  function clearDim(scopeEl) {
+    scopeEl.classList.remove('gw-tour-active');
+    scopeEl.querySelectorAll('.gw-dim, .gw-target').forEach(function (el) {
+      el.classList.remove('gw-dim'); el.classList.remove('gw-target');
+    });
+  }
 
+  // Auto-reveal: kalau target atau salah satu ancestornya (sampai scope) punya atribut `hidden`,
+  // atau ada di dalam <details> yang belum `open`, buka otomatis — tour gak pernah berhenti di
+  // elemen yang gak keliatan (poin 5b-A: "target hidden di panel hasil harus di-reveal otomatis").
+  function autoReveal(scopeEl, targetEl) {
+    var n = targetEl;
+    while (n && n !== scopeEl.parentElement) {
+      if (n.hasAttribute && n.hasAttribute('hidden')) n.removeAttribute('hidden');
+      if (n.tagName === 'DETAILS' && !n.open) n.open = true;
+      n = n.parentElement;
+    }
+  }
+
+  function getState(tourId) {
+    var raw = ls(LS_PREFIX + tourId + ':progress');
+    return raw ? JSON.parse(raw) : null;
+  }
+  function saveProgress(tourId, data) { lsSet(LS_PREFIX + tourId + ':progress', JSON.stringify(data)); }
+  function clearProgress(tourId) { lsDel(LS_PREFIX + tourId + ':progress'); }
+
+  // ── runScreen: jalanin 1 urutan sub-step (1 mock screen) ────────────────────────────────────
+  function runScreen(steps, opts) {
+    var scopeEl = resolveScope(opts.scope);
+    if (!scopeEl) return null;
     injectStyle();
-    var lang = state.lang || opts.lang || 'id';
+    var lang = opts.lang || 'id';
     var index = 0;
 
-    var backdrop = document.createElement('div');
-    backdrop.className = 'gt-backdrop';
-    var spot = document.createElement('div');
-    spot.className = 'gt-spot';
     var tip = document.createElement('div');
     tip.className = 'gt-tip';
-    document.body.appendChild(backdrop);
-    document.body.appendChild(spot);
     document.body.appendChild(tip);
 
     function cleanup() {
-      backdrop.remove(); spot.remove(); tip.remove();
+      tip.remove();
+      clearDim(scopeEl);
       window.removeEventListener('resize', reposition);
       window.removeEventListener('scroll', reposition, true);
     }
-
-    function findStepEl(i) {
+    function findEl(i) {
       var s = steps[i];
-      var el = s && document.querySelector(s.selector);
-      return el;
+      return s && scopeEl.querySelector(s.selector);
     }
-
-    // Lewatin step yang elemennya gak ketemu di mock screen ini (belum render/hidden) — jangan
-    // crash, lanjut ke step valid berikutnya; kalau gak ada satupun yang valid, batal diam-diam.
     function nextValidIndex(from, dir) {
       var i = from;
-      while (i >= 0 && i < steps.length) {
-        if (findStepEl(i)) return i;
-        i += dir;
-      }
+      while (i >= 0 && i < steps.length) { if (findEl(i)) return i; i += dir; }
       return -1;
     }
-
     function reposition() {
-      var el = findStepEl(index);
+      var el = findEl(index);
       if (!el) return;
       var r = el.getBoundingClientRect();
-      var pad = 6;
-      spot.style.top = (r.top - pad) + 'px';
-      spot.style.left = (r.left - pad) + 'px';
-      spot.style.width = (r.width + pad * 2) + 'px';
-      spot.style.height = (r.height + pad * 2) + 'px';
-
       var tipTop = r.bottom + 14;
-      if (tipTop + 140 > window.innerHeight) tipTop = Math.max(10, r.top - 150);
-      var tipLeft = Math.min(Math.max(10, r.left), window.innerWidth - 330);
+      if (tipTop + 150 > window.innerHeight) tipTop = Math.max(10, r.top - 160);
+      var tipLeft = Math.min(Math.max(10, r.left), window.innerWidth - 332);
       tip.style.top = tipTop + 'px';
       tip.style.left = tipLeft + 'px';
     }
 
     function render() {
-      var el = findStepEl(index);
+      var el = findEl(index);
       if (!el) { finish(); return; }
+      autoReveal(scopeEl, el);
       el.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' });
+      applyDimTarget(scopeEl, el);
 
       var s = steps[index];
       var copy = s[lang] || s.id || s.en;
+      var isLast = nextValidIndex(index + 1, 1) === -1;
+      var nextLabelDefault = isLast
+        ? (opts.lastButtonLabel ? opts.lastButtonLabel[lang] : (lang === 'en' ? 'Finish' : 'Selesai'))
+        : (lang === 'en' ? 'Next' : 'Lanjut');
+
       tip.innerHTML = ''
         + '<div class="gt-tip__progress"></div>'
         + '<p class="gt-tip__title"></p>'
@@ -188,14 +227,11 @@
       var backBtn = tip.querySelector('[data-act="back"]');
       backBtn.disabled = index === 0;
       var nextBtn = tip.querySelector('[data-act="next"]');
-      var isLast = nextValidIndex(index + 1, 1) === -1;
-      nextBtn.textContent = isLast ? (lang === 'en' ? 'Finish' : 'Selesai') : (lang === 'en' ? 'Next' : 'Lanjut');
+      nextBtn.textContent = nextLabelDefault;
 
       tip.querySelectorAll('.gt-tip__lang').forEach(function (b) {
         b.classList.toggle('active', b.dataset.lang === lang);
-        b.addEventListener('click', function () {
-          lang = b.dataset.lang; setLang(tourId, lang); render();
-        });
+        b.addEventListener('click', function () { lang = b.dataset.lang; render(); });
       });
       backBtn.addEventListener('click', function () {
         var p = nextValidIndex(index - 1, -1);
@@ -206,31 +242,146 @@
         if (n === -1) { finish(); } else { index = n; render(); }
       });
       tip.querySelector('[data-act="skip"]').addEventListener('click', function () {
-        setDismissed(tourId); cleanup();
+        cleanup();
+        if (opts.onSkip) opts.onSkip();
       });
 
       reposition();
     }
 
     function finish() {
-      markPageDone(tourId, pageKey);
+      // Auto-reveal elemen hasil kalau ada — poin 5b-A.
+      var resultEl = scopeEl.querySelector('[data-mock-result][hidden]');
+      if (resultEl) resultEl.removeAttribute('hidden');
       cleanup();
+      if (opts.onFinish) opts.onFinish();
     }
 
     window.addEventListener('resize', reposition);
     window.addEventListener('scroll', reposition, true);
 
     var start = nextValidIndex(0, 1);
-    if (start === -1) { cleanup(); return null; } // gak ada elemen yang ketemu sama sekali di mock screen ini
+    if (start === -1) { cleanup(); return null; }
     index = start;
     render();
 
-    return { cleanup: cleanup, finish: finish };
+    return { cleanup: cleanup };
+  }
+
+  // ── runSequence: orkestrasi lintas screen, alur berkelanjutan (poin 5b-A) ──────────────────
+  function runSequence(screens, opts) {
+    var tourId = opts.tourId;
+    var container = resolveScope(opts.container);
+    var lang = opts.lang || (getState(tourId) && getState(tourId).lang) || 'id';
+
+    function renderBar(html) {
+      if (!container) return;
+      container.innerHTML = html;
+    }
+    function clearBar() { if (container) container.innerHTML = ''; }
+
+    function startScreen(idx, label) {
+      if (idx < 0 || idx >= screens.length) return;
+      saveProgress(tourId, { screenIndex: idx, lang: lang });
+      clearBar();
+      var scr = screens[idx];
+      runScreen(scr.steps, {
+        scope: scr.scope,
+        lang: lang,
+        lastButtonLabel: label || { id: 'Lihat hasil', en: 'See result' },
+        onSkip: function () { clearProgress(tourId); clearBar(); if (opts.onSkip) opts.onSkip(); },
+        onFinish: function () { onScreenDone(idx); },
+      });
+    }
+
+    function onScreenDone(idx) {
+      var isLast = idx === screens.length - 1;
+      if (isLast) {
+        clearProgress(tourId);
+        renderBar(''
+          + '<div class="gt-complete">'
+          + '  <h3>' + (lang === 'en' ? 'Tour complete' : 'Tur selesai') + '</h3>'
+          + '  <p>' + (lang === 'en' ? 'You have seen every screen in this flow.' : 'Anda telah melihat seluruh layar pada alur ini.') + '</p>'
+          + '  <div class="gt-row">'
+          + '    <button type="button" class="gt-primary" data-act="replay">' + (lang === 'en' ? 'Replay' : 'Ulangi') + '</button>'
+          + '    <button type="button" data-act="role">' + (lang === 'en' ? 'Change role' : 'Ganti peran') + '</button>'
+          + '    <button type="button" data-act="detail">' + (lang === 'en' ? 'Open detail topics' : 'Buka topik detail') + '</button>'
+          + '  </div>'
+          + '</div>');
+        container.querySelector('[data-act="replay"]').addEventListener('click', function () { startScreen(0); });
+        container.querySelector('[data-act="role"]').addEventListener('click', function () {
+          clearBar(); if (opts.onChangeRole) opts.onChangeRole();
+        });
+        container.querySelector('[data-act="detail"]').addEventListener('click', function () {
+          clearBar(); if (opts.onOpenDetail) opts.onOpenDetail();
+        });
+        return;
+      }
+      renderBar(''
+        + '<div class="gt-screenbar">'
+        + '  <button type="button" data-act="prev"' + (idx === 0 ? ' disabled' : '') + '>'
+        + '    ' + (lang === 'en' ? '← Previous screen' : '← Layar sebelumnya') + '</button>'
+        + '  <button type="button" data-act="replay">' + (lang === 'en' ? 'Replay' : 'Ulangi') + '</button>'
+        + '  <button type="button" class="gt-primary" data-act="next">'
+        + '    ' + (lang === 'en' ? 'Next screen →' : 'Layar berikutnya →') + '</button>'
+        + '</div>');
+      var prevBtn = container.querySelector('[data-act="prev"]');
+      if (!prevBtn.disabled) prevBtn.addEventListener('click', function () { startScreen(idx - 1); });
+      container.querySelector('[data-act="replay"]').addEventListener('click', function () { startScreen(idx); });
+      container.querySelector('[data-act="next"]').addEventListener('click', function () { startScreen(idx + 1); });
+    }
+
+    // "Continue" — kalau ada progress tersimpan, caller (role-picker/entry UI) yang nawarin;
+    // runSequence sendiri SELALU mulai dari index yang dikasih di opts.startAt (default 0).
+    startScreen(typeof opts.startAt === 'number' ? opts.startAt : 0);
+
+    return {
+      stop: function () { clearBar(); clearProgress(tourId); },
+    };
+  }
+
+  function getSavedProgress(tourId) { return getState(tourId); }
+
+  // ── Verifikasi (poin 5b-F) — dipanggil manual pas ngetes, bukan runtime guide ───────────────
+  function verifySelectors(screens) {
+    var report = {};
+    screens.forEach(function (scr) {
+      var scopeEl = resolveScope(scr.scope);
+      report[scr.screenKey] = scr.steps.map(function (s) {
+        var found = !!(scopeEl && scopeEl.querySelector(s.selector));
+        return { selector: s.selector, found: found };
+      });
+    });
+    return report;
+  }
+  function verifyOrder(screens) {
+    var report = {};
+    screens.forEach(function (scr) {
+      var scopeEl = resolveScope(scr.scope);
+      var prev = null;
+      report[scr.screenKey] = scr.steps.map(function (s, i) {
+        var el = scopeEl && scopeEl.querySelector(s.selector);
+        if (!el) return 'NOT FOUND: ' + s.selector;
+        var r = el.getBoundingClientRect();
+        if (prev) {
+          // top-to-bottom dulu (toleransi 8px buat elemen sebaris), baru left-to-right.
+          var sameRow = Math.abs(r.top - prev.top) <= 8;
+          var ok = sameRow ? r.left >= prev.left - 1 : r.top >= prev.top - 1;
+          if (!ok) { prev = r; return 'OUT OF ORDER vs step ' + i + ': ' + s.selector; }
+        }
+        prev = r;
+        return 'ok';
+      });
+    });
+    return report;
   }
 
   global.GuideTour = {
-    init: function (steps, opts) { return runTour(steps, opts, false); },
-    start: function (steps, opts) { return runTour(steps, opts, true); },
+    runScreen: runScreen,
+    runSequence: runSequence,
+    getSavedProgress: getSavedProgress,
+    verifySelectors: verifySelectors,
+    verifyOrder: verifyOrder,
   };
 })(window);
 
@@ -240,30 +391,35 @@
    literal tag penutup script pertama yang ditemukan WALAU itu di dalam comment/string JS. Kalau
    di-include normal lewat <script src="guide-tour.js"> (cara yang dianjurkan), ini gak masalah.
 
-   Selector-nya nunjuk ke elemen MOCK di dalam markup guide-walkthrough.template.html (mis.
-   data-mock="btnAddFlexForm" di salah satu .gw-mock block), BUKAN ke tombol asli di halaman app.
+   Selector-nya nunjuk ke elemen MOCK di dalam markup guide-walkthrough.template.html (data-mock=
+   "btnAddFlexForm" di salah satu .gw-mockpage), BUKAN ke tombol asli di halaman app.
 <script src="guide-tour.js"><\/script>
 <script>
-  document.addEventListener('DOMContentLoaded', function () {
-    // Jalan HANYA di dalam modal guide, pas user buka modal "User Guide" / pindah ke mock screen
-    // "list" — bukan di-load di halaman app aslinya.
-    GuideTour.init([
-      {
-        selector: '#gwRoot [data-mock="btnAddFlexForm"]',
-        id: { title: 'Tambah Formulir Baru', text: 'Di halaman asli, tombol ini ada di pojok kanan atas. Klik buat mulai bikin Flex Form baru dari nol.' },
-        en: { title: 'Add New Form', text: 'On the real page, this button sits at the top right. Click it to start creating a new Flex Form from scratch.' }
-      },
-      {
-        selector: '#gwRoot [data-mock="btnPanduan"]',
-        id: { title: 'Tombol Panduan', text: 'Ini tombol yang lagi Anda pakai sekarang — buka panduan ini kapan saja.' },
-        en: { title: 'Guide Button', text: 'This is the button you are using right now — opens this guide any time.' }
-      }
-      // ... 1 step per kontrol di mock screen ini, sampai yang terkecil ...
-    ], { tourId: 'flexform-guide', pageKey: 'mock-list' });
+  var screens = [
+    {
+      screenKey: 'list',
+      scope: '#gwMockScreenList',
+      steps: [
+        { selector: '[data-mock="navRacer"]', id: { title: 'Menu Racer', text: 'Grup menu tempat Flex Form berada.' }, en: { title: 'Racer Menu', text: 'The menu group where Flex Form lives.' } },
+        { selector: '[data-mock="btnAddFlexForm"]', id: { title: 'Tambah Formulir Baru', text: 'Klik di sini buat mulai bikin Flex Form baru dari nol.' }, en: { title: 'Add New Form', text: 'Click here to start creating a new Flex Form from scratch.' } }
+        // ... 1 sub-step per kontrol di mock screen "list" ini, urut atas->bawah lalu kiri->kanan ...
+      ]
+    },
+    {
+      screenKey: 'detail',
+      scope: '#gwMockScreenDetail',
+      steps: [
+        // ... sub-step mock screen "detail" ...
+      ]
+    }
+  ];
 
-    // Tombol manual "Mulai Tour" / "Take a Tour", DI DALAM guide:
-    document.getElementById('btnStartTourInGuide').addEventListener('click', function () {
-      GuideTour.start(stepsForThisMockScreen, { tourId: 'flexform-guide', pageKey: 'mock-list' });
+  document.addEventListener('DOMContentLoaded', function () {
+    GuideTour.runSequence(screens, {
+      tourId: 'flexform-guide',
+      container: '#gwScreenBar', // elemen tempat bar Previous/Replay/Next-screen & kartu Tour complete di-render
+      onChangeRole: function () { }, // isi: balik ke role picker
+      onOpenDetail: function () { } // isi: pindah ke topik detail guide
     });
   });
 <\/script>

@@ -31,5 +31,8 @@ untuk 1 module tertentu dalam sebuah app.
    `_app-user-guide-generator/template/GUIDE.template.md`).
 6. Jangan narasikan proses trial-error pencarian sendiri di dalam dokumen final — itu buat laporan
    ke user di chat, bukan buat isi guide.
-7. Verifikasi hasil sebelum lapor selesai: label tombol & pesan error di guide match sama yang ada
-   di kode/guide asli.
+7. Verifikasi wajib sebelum lapor selesai (poin 5b-F core doc): label tombol & pesan error di guide
+   match sama kode/guide asli; `GuideTour.verifySelectors()`/`verifyOrder()` semua lolos;
+   `_app-user-guide-generator/template/lint-id-text.js` buat teks ID bersih dari slang; jalanin
+   tour-nya beneran di browser (semua role, no console error). Hasil sub-agent/worker verifikasi
+   ulang, jangan percaya mentah.
