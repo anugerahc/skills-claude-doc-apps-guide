@@ -4,66 +4,75 @@
   spotlight/tooltip/orkestrasi-lintas-screen). SEMUA ini hidup DI DALAM guide/modal "User Guide" —
   gak pernah nyuntik apapun ke halaman real app.
 
-  Struktur (poin 5b-A): Guided Tour = topik PERTAMA & default saat guide dibuka. Role picker (kalau
-  module-nya multi-role) -> tour jalan otomatis lintas mock screen, berkelanjutan (abis 1 screen,
-  bar Previous/Replay/Next-screen, gak perlu klik tambahan buat lanjut) -> kartu "Tour complete" di
-  screen terakhir. "Quick start" (referensi manual self-paced, BUKAN interaktif) tetap ada sebagai
-  topik TERPISAH di layer detail (lihat template/GUIDE.template.md) — bukan di file ini.
+  Struktur (poin 5b-A, v1.5.0): Guided Tour = topik PERTAMA & default saat guide dibuka, dan jadi
+  SATU tour end-to-end TANPA role picker: begitu topiknya tampil, tour langsung jalan dari langkah 1
+  dan mengikuti perjalanan nyata objek utama app (semua peran dalam satu urutan alur kerja).
+    - Penomoran langkah GLOBAL 1..N ("Step 37 of 395 · <bab>") — engine ngitung base/total sendiri.
+    - Chip BAB di atas (klik = lompat), progress bar per screen, tombol "Restart tour".
+    - Abis 1 screen: hasilnya muncul + bar Previous / Replay / Next screen; "Next screen" langsung
+      mulai screen berikutnya. Screen terakhir -> kartu "Tour complete".
+    - Posisi terakhir disimpan (localStorage); buka lagi = lanjut dari situ.
+    - Screen yang isinya sama dengan screen lain (mis. dua tipe stage berlayout identik) TIDAK
+      diulang penuh: satu screen CATATAN yang menyebut bedanya (diverifikasi dari kode).
+  "Quick start" (referensi manual self-paced, BUKAN interaktif) tetap ada sebagai topik TERPISAH di
+  layer detail (lihat template/GUIDE.template.md) — bukan di file ini.
 
   Layout (poin 5b-B): section ini WAJIB full-width mengikuti lebar modal — gak ada max-width sempit
   di sini, mock screen juga gak dibatasi tinggi tetap. Tes di viewport 1366 / 1920 / mobile.
+  CSS milik modal guide sendiri (mis. max-width pada .modal-dialog) TIDAK boleh menimpa dialog
+  tiruan di dalam mock — pakai child combinator (".guide-modal > .modal-dialog"), bukan descendant.
 
   Mock screen (poin 5b-C): tiap screen = HALAMAN UTUH (header/topbar, nav, kartu, panel, toolbar
-  dengan urutan & proporsi kayak halaman asli) — bukan cuma 1 tombol doang. Elemen yang lagi
-  dijelaskan di-highlight (engine yang nambahin class, lihat guide-tour.template.js), sisanya
-  diredupkan TAPI TETAP KELIATAN sebagai konteks (opacity turun, bukan ditutup backdrop). Dialog
-  mock di dalam screen (division class .gw-dialog) dirender STATIS di alur dokumen — tanpa
-  position:fixed/absolute, tanpa backdrop sendiri — contoh ada di screen "list" di bawah.
+  dengan urutan & proporsi kayak halaman asli) — bukan cuma 1 tombol doang. Header/status/stepper
+  di mock mengikuti logika dan label dari kode app untuk status yang ditampilkan screen itu.
+  Bagian yang lagi dibahas = BAGIAN INTI, ditandai atribut `data-core`; sisanya konteks. Engine
+  nyari target di dalam `[data-core]` dulu, baru di seluruh screen. Elemen yang dijelaskan
+  di-highlight, sisanya diredupkan TAPI TETAP KELIATAN (opacity turun, bukan backdrop). Tiap potongan
+  halaman muncul SEKALI per screen (gate duplikasi: template/tools/duplicheck.js). Screen untuk varian
+  (mis. stage tipe B) wajib pakai gambar/contoh data varian itu sendiri, bukan salinan tipe A
+  (gate: template/tools/leakcheck.js). Dialog mock di dalam screen (.gw-dialog) dirender STATIS di
+  alur dokumen — tanpa position:fixed/absolute, tanpa offset/transform, tanpa backdrop sendiri.
 
-  Urutan (poin 5b-D): `data-mock` di tiap kontrol WAJIB diberi step di guide-tour.template.js secara
-  urut posisi visual atas->bawah lalu kiri->kanan; kontrol yang mesti diklik user jadi sub-step
-  TERAKHIR screen itu (tanpa melanggar urutan visual demi itu) — ini aturan pengarangan konten,
-  dicek pakai GuideTour.verifyOrder() (lihat komentar di guide-tour.template.js).
+  Urutan (poin 5b-D): tiap kontrol WAJIB diberi sub-step di guide-tour.template.js secara urut
+  posisi DOM/visual atas->bawah lalu kiri->kanan. Kontrol yang mesti diklik user dijelaskan di
+  posisi alaminya, lalu BOLEH ditambah satu sub-step penutup "Next action: ..." (selector sama,
+  properti act:true). Tiap screen halaman penuh diawali satu sub-step orientasi (halaman apa,
+  status apa, langkah mana). Dicek: template/tools/ordercheck.js (jsdom) dan GuideTour.verifyOrder().
 -->
 <div class="gw-root" id="gwRoot">
 
-  <!-- ── Role picker (hapus kalau module cuma 1 persona) ─────────────────── -->
-  <div class="gw-roles" id="gwRoles">
-    <p class="gw-roles__lead">{{ROLE_PICKER_LEAD}}</p>
-    <div class="gw-roles__grid">
-      <button type="button" class="gw-role" data-role="{{ROLE_1_KEY}}">
-        <span class="gw-role__title">{{ROLE_1_LABEL}}</span>
-        <span class="gw-role__desc">{{ROLE_1_SHORT_DESC}}</span>
-      </button>
-      <button type="button" class="gw-role" data-role="{{ROLE_2_KEY}}">
-        <span class="gw-role__title">{{ROLE_2_LABEL}}</span>
-        <span class="gw-role__desc">{{ROLE_2_SHORT_DESC}}</span>
-      </button>
-      <!-- ... ulangi per role ... -->
-    </div>
+  <!-- ── Sambutan singkat (1-2 kalimat) + kontrol tour ──────────────────────── -->
+  <div class="gw-hero">
+    <p class="gw-hero__lead">{{WELCOME_LEAD}}</p>
+    <p class="gw-hero__how">{{HOW_TO_USE_TOUR}}</p>
   </div>
+  <div class="gw-chaps" id="gwChaps"><!-- chip bab diisi script: <button class="gw-chap" data-first="idx"><span>1</span>Nama bab</button> --></div>
+  <div class="gw-tourtop">
+    <span class="gw-tourcount" id="gwTourCount"></span>
+    <button type="button" class="gw-btn" id="gwRestart">{{RESTART_LABEL}}</button>
+  </div>
+  <div class="gw-tprog" id="gwTprog"></div>
 
-  <!-- ── Tour per role (satu blok per data-role, disembunyiin sampe role dipilih) ── -->
-  <div class="gw-walk" data-walk-for="{{ROLE_1_KEY}}" hidden>
+  <div class="gw-walk" id="gwWalk">
 
     <!-- Mock screen 1 — HALAMAN UTUH, bukan potongan. Struktur contoh: topbar + sidebar nav +
          content (toolbar + kartu/tabel) + 1 dialog mock statis di alur dokumen. Ganti proporsi/
          komponennya biar niru layout app asli — jangan buang bagian manapun demi "ringkas", itu
-         yang bikin tour kerasa gak mirip aplikasi aslinya. -->
-    <section class="gw-mockpage" id="gwMockScreenList">
+         yang bikin tour kerasa gak mirip aplikasi aslinya. `data-core` = bagian inti screen ini. -->
+    <section class="gw-mockpage" id="gwMockScreenList" data-chapter="{{CHAPTER_1_NAME}}">
       <div class="gw-mp-topbar" data-mock="navTopbar">
         <span class="gw-mp-brand">{{APP_NAME}}</span>
         <span class="gw-mp-user">{{USER_BADGE}}</span>
       </div>
       <div class="gw-mp-body">
         <nav class="gw-mp-side" data-mock="navSidebar">
-          <div class="gw-mp-navitem gw-mp-navitem--active" data-mock="navRacer">{{NAV_GROUP_LABEL}}</div>
+          <div class="gw-mp-navitem gw-mp-navitem--active" data-mock="navGroup">{{NAV_GROUP_LABEL}}</div>
           <div class="gw-mp-navitem" data-mock="navOther">{{OTHER_NAV_LABEL}}</div>
         </nav>
-        <main class="gw-mp-main">
+        <main class="gw-mp-main" data-core>
           <div class="gw-mp-toolbar">
             <h4 class="gw-mp-title">{{SCREEN_1_TITLE}}</h4>
-            <button type="button" class="gw-mp-btn gw-mp-btn--primary" data-mock="btnAddFlexForm">{{ADD_BUTTON_LABEL}}</button>
+            <button type="button" class="gw-mp-btn gw-mp-btn--primary" data-mock="btnAdd">{{ADD_BUTTON_LABEL}}</button>
           </div>
           <table class="gw-mp-table">
             <thead><tr><th>{{COL_1}}</th><th>{{COL_2}}</th><th>{{COL_3}}</th></tr></thead>
@@ -86,16 +95,14 @@
 
     <!-- Mock screen 2 dst — pola sama, ganti isinya sesuai halaman berikutnya di alur. Harus
          `hidden` sampai GuideTour.runSequence pindah ke sini (lewat scope yang beda per screen). -->
-    <section class="gw-mockpage" id="gwMockScreenDetail" hidden>
+    <section class="gw-mockpage" id="gwMockScreenDetail" data-chapter="{{CHAPTER_2_NAME}}" hidden>
       <!-- ... struktur halaman penuh screen berikutnya ... -->
     </section>
 
     <!-- Tempat engine nge-render bar "Previous screen / Replay / Next screen" & kartu "Tour
-         complete" (lihat GuideTour.runSequence, parameter `container`). Full-width, gak ada
-         max-width di sini. -->
+         complete" (lihat GuideTour.runSequence, parameter `container`). Full-width. -->
     <div id="gwScreenBar"></div>
   </div>
-  <!-- ... ulangi blok .gw-walk per role ... -->
 
 </div>
 
@@ -105,13 +112,28 @@
   .gw-root, .gw-walk, .gw-mockpage, #gwScreenBar { width: 100%; box-sizing: border-box; }
   .gw-root { font: 14px/1.5 system-ui, sans-serif; color: #2b3230; }
 
-  .gw-roles__lead { font-weight: 600; margin-bottom: .6rem; }
-  .gw-roles__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
-  .gw-role { text-align: left; border: 1px solid #dde4e0; background: #fff; border-radius: 12px;
-    padding: 12px 14px; cursor: pointer; transition: all .15s; }
-  .gw-role:hover { border-color: #1f9d57; transform: translateY(-2px); }
-  .gw-role__title { display: block; font-weight: 700; }
-  .gw-role__desc { display: block; font-size: .85em; color: #6c757d; margin-top: 2px; }
+  .gw-hero { background: linear-gradient(135deg, #e8f6ee 0%, #f6fbf8 100%); border: 1px solid #cfe9da;
+    border-radius: 14px; padding: 14px 18px; margin-bottom: .8rem; }
+  .gw-hero p { margin: 0 0 4px; }
+  .gw-hero__lead { font-weight: 600; }
+
+  .gw-chaps { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: .6rem; }
+  .gw-chap { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #dde4e0; background: #fff;
+    border-radius: 999px; padding: 4px 12px 4px 4px; font-size: .82rem; color: #5e6b66; cursor: pointer; }
+  .gw-chap span { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+    background: #e3e8e5; font-weight: 700; font-size: .75rem; }
+  .gw-chap:hover { border-color: #1f9d57; }
+  .gw-chap.on { border-color: #1f9d57; background: #e8f6ee; color: #1d5a37; font-weight: 600; }
+  .gw-chap.on span { background: #1f9d57; color: #fff; }
+
+  .gw-tourtop { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .gw-tourcount { font-size: .8rem; color: #8a948f; }
+  .gw-btn { border: 1px solid #1f9d57; background: #fff; color: #1f9d57; border-radius: 8px; padding: 4px 12px;
+    font-weight: 600; cursor: pointer; font-size: .82rem; }
+  .gw-tprog { display: flex; gap: 6px; margin: .3rem 0 .7rem; }
+  .gw-tprog span { flex: 1; height: 8px; border-radius: 4px; background: #e3e8e5; cursor: pointer; }
+  .gw-tprog span.done { background: #9bd5b5; }
+  .gw-tprog span.cur { background: #1f9d57; }
 
   /* mock page — GANTI token warna/radius/font ini biar niru theme app target. Gak ada max-height
      tetap: tinggi ngikutin konten (poin 5b-B). */
@@ -147,46 +169,67 @@
 </style>
 
 <script>
-  // Vanilla, no deps. Role picker -> GuideTour.runSequence per role. Spotlight/tooltip/urutan
-  // screen semuanya ditangani guide-tour.template.js (include file itu SEBELUM script ini).
+  // Vanilla, no deps. SATU tour end-to-end: begitu topik "Guided tour" tampil, panggil start().
+  // Spotlight/tooltip/urutan/penomoran global semuanya ditangani guide-tour.template.js (include
+  // file itu SEBELUM script ini).
   (function () {
     var root = document.getElementById('gwRoot');
     if (!root || !window.GuideTour) return;
 
-    function screensFor(role) {
-      // GANTI: isi step list per mock screen punya role ini. Lihat contoh lengkap di komentar
-      // paling bawah guide-tour.template.js.
-      return [
-        { screenKey: role + '-list', scope: '#gwMockScreenList', steps: [/* ... */] },
-        { screenKey: role + '-detail', scope: '#gwMockScreenDetail', steps: [/* ... */] },
-      ];
+    // GANTI: satu daftar screen berurutan sesuai alur kerja nyata app (diverifikasi ke kode), tiap
+    // screen bawa `chapter`. Sub-step diisi per screen — lihat contoh di komentar paling bawah
+    // guide-tour.template.js. Screen penuh diawali sub-step orientasi, kontrol yang diklik boleh
+    // diulang sebagai sub-step penutup { ..., act: true }.
+    var SCREENS = [
+      { screenKey: 'list',   chapter: '{{CHAPTER_1_NAME}}', scope: '#gwMockScreenList',   steps: [/* ... */] },
+      { screenKey: 'detail', chapter: '{{CHAPTER_2_NAME}}', scope: '#gwMockScreenDetail', steps: [/* ... */] },
+    ];
+    var TOUR_ID = 'guide-tour';
+    var seq = null;
+
+    function chapters() {
+      var out = [];
+      SCREENS.forEach(function (s, i) { if (!out.length || out[out.length - 1].name !== s.chapter) out.push({ name: s.chapter, first: i }); });
+      return out;
     }
-
-    root.querySelectorAll('.gw-role').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var role = btn.dataset.role;
-        root.querySelector('#gwRoles').hidden = true;
-        var walk = root.querySelector('.gw-walk[data-walk-for="' + role + '"]');
-        if (!walk) return;
-        walk.hidden = false;
-
-        GuideTour.runSequence(screensFor(role), {
-          tourId: 'guide-' + role,
-          container: walk.querySelector('#gwScreenBar'),
-          onChangeRole: function () {
-            walk.hidden = true;
-            root.querySelector('#gwRoles').hidden = false;
-          },
-          onOpenDetail: function () {
-            // GANTI: panggil navigasi ke topik detail guide (nav/search layer di
-            // template/GUIDE.template.md), misal: document.querySelector('[data-guide-nav="detail"]').click()
-          },
-          onSkip: function () {
-            walk.hidden = true;
-            root.querySelector('#gwRoles').hidden = false;
-          },
-        });
+    function drawChrome(idx) {
+      var ch = chapters(), cur = 0;
+      ch.forEach(function (c, k) { if (c.first <= idx) cur = k; });
+      document.getElementById('gwChaps').innerHTML = ch.map(function (c, k) {
+        return '<button type="button" class="gw-chap' + (k === cur ? ' on' : '') + '" data-first="' + c.first + '"><span>' + (k + 1) + '</span>' + c.name + '</button>';
+      }).join('');
+      document.getElementById('gwTprog').innerHTML = SCREENS.map(function (s, k) {
+        return '<span class="' + (k < idx ? 'done' : k === idx ? 'cur' : '') + '" data-i="' + k + '"></span>';
+      }).join('');
+      document.getElementById('gwTourCount').textContent =
+        'Chapter ' + (cur + 1) + ' of ' + ch.length + ' · ' + SCREENS[idx].chapter + ' · Screen ' + (idx + 1) + ' of ' + SCREENS.length;
+    }
+    function showOnly(idx) {
+      SCREENS.forEach(function (s, k) { var el = document.querySelector(s.scope); if (el) el.hidden = k !== idx; });
+    }
+    function start(at) {
+      if (seq) seq.stop();
+      seq = GuideTour.runSequence(SCREENS, {
+        tourId: TOUR_ID,
+        container: '#gwScreenBar',
+        startAt: at || 0,
+        onScreenChange: function (idx) { showOnly(idx); drawChrome(idx); },
+        onOpenDetail: function () {
+          // GANTI: pindah ke topik detail guide (nav/search layer di template/GUIDE.template.md).
+        },
       });
+    }
+    // Dipanggil saat topik "Guided tour" tampil. Lanjut dari posisi tersimpan kalau ada.
+    function enter() {
+      var saved = GuideTour.getSavedProgress(TOUR_ID);
+      start(saved && typeof saved.screenIndex === 'number' ? saved.screenIndex : 0);
+    }
+    root.addEventListener('click', function (e) {
+      var chip = e.target.closest('.gw-chap'), dot = e.target.closest('#gwTprog span');
+      if (chip) start(parseInt(chip.dataset.first, 10));
+      else if (dot) start(parseInt(dot.dataset.i, 10));
+      else if (e.target.id === 'gwRestart') start(0);
     });
+    window.GuideTourEntry = { enter: enter };   // integrator: panggil GuideTourEntry.enter() saat topik tampil
   })();
 </script>

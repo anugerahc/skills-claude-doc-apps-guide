@@ -15,19 +15,33 @@
  *
  * Dua lapis API:
  *   GuideTour.runScreen(steps, opts) — jalanin satu urutan sub-step (1 mock screen). opts:
- *     { scope, tourId, screenKey, lang, lastButtonLabel:{en,id}, onFinish(), onSkip() }
+ *     { scope, tourId, screenKey, lang, lastButtonLabel:{en,id}, onFinish(), onSkip(),
+ *       base, total, chapter }
+ *     `base` + `total` = penomoran GLOBAL satu tour end-to-end ("Step 37 of 395 · <chapter>"):
+ *     base = jumlah sub-step di semua screen sebelum ini, total = jumlah sub-step seluruh tour.
+ *     Tanpa keduanya, penomoran jatuh ke per-screen. `chapter` = label bab yang ikut tampil.
+ *     Selector sub-step dicari DULU di dalam elemen `[data-core]` (bagian inti layar = potongan
+ *     yang lagi dibahas), baru di seluruh scope — jadi konteks halaman di sekitarnya (header,
+ *     stepper, kartu) gak bikin selector nyasar ke elemen lain yang mirip.
+ *     Sub-step dengan `act: true` = langkah penutup "Next action: ..." (kontrol yang sama boleh
+ *     muncul dua kali: sekali di posisi alaminya, sekali sebagai ajakan klik); verifyOrder
+ *     melewatinya.
  *     `lastButtonLabel` override teks tombol di sub-step TERAKHIR screen ini (defaultnya
  *     "Lanjut"/"Next" biasa — di alur berkelanjutan biasanya diganti jadi "Lihat hasil"/"See
  *     result" karena abis ini BUKAN akhir tour, cuma akhir screen itu).
  *   GuideTour.runSequence(screens, opts) — orkestrasi lintas screen (lihat core doc poin 5b-A):
- *     screens = [{ screenKey, scope, steps, resultLabel? }, ...]
- *     opts = { tourId, lang, onChangeRole(), onOpenDetail(), container }
+ *     screens = [{ screenKey, scope, steps, chapter?, resultLabel? }, ...]
+ *     opts = { tourId, lang, onOpenDetail(), onScreenChange(idx, screen), container, startAt }
+ *     Satu tour end-to-end, TANPA role picker: semua peran dalam satu urutan alur kerja nyata.
+ *     runSequence menghitung `base`/`total` sendiri dari jumlah sub-step tiap screen dan
+ *     meneruskan `chapter` tiap screen; `onScreenChange` dipanggil di tiap pindah screen supaya
+ *     integrator bisa nandain chip bab / progress bar screen.
  *     Abis 1 screen selesai (sub-step terakhir diklik): auto reveal elemen hasil
  *     ([hidden][data-mock-result] di dalam scope screen itu kalau ada), lalu render bar
  *     "Previous screen / Replay / Next screen" (di dalam `container` — elemen yang disediakan
  *     integrator buat nampung UI bar ini, biasanya tepat di bawah mock screen). "Next screen"
  *     langsung mulai tour screen berikutnya, gak perlu klik tambahan lain. Screen terakhir ->
- *     kartu "Tour complete" (Replay / Change role / Open detail topic). Posisi terakhir
+ *     kartu "Tour complete" (Replay / Open detail topic). Posisi terakhir
  *     (index screen + lang) ke-save localStorage; `GuideTour.getSavedProgress(tourId)` buat cek
  *     ada progress tersimpan sebelum nawarin "Continue".
  *
@@ -51,6 +65,17 @@
     if (!scope) return document;
     if (typeof scope === 'string') return document.querySelector(scope);
     return scope;
+  }
+
+  // Cari elemen target: DULU di bagian inti layar ([data-core]), baru di seluruh scope.
+  function lookup(scopeEl, selector) {
+    if (!scopeEl) return null;
+    var cores = scopeEl.querySelectorAll('[data-core]');
+    for (var k = 0; k < cores.length; k++) {
+      var hit = cores[k].querySelector(selector);
+      if (hit) return hit;
+    }
+    return scopeEl.querySelector(selector);
   }
 
   // ── style (sekali injek) ──────────────────────────────────────────────────────────────────
@@ -171,7 +196,7 @@
     }
     function findEl(i) {
       var s = steps[i];
-      return s && scopeEl.querySelector(s.selector);
+      return s && lookup(scopeEl, s.selector);
     }
     function nextValidIndex(from, dir) {
       var i = from;
@@ -219,8 +244,10 @@
         + '  </span>'
         + '</div>';
 
+      var base = opts.base || 0, total = opts.total || steps.length;
       tip.querySelector('.gt-tip__progress').textContent =
-        (lang === 'en' ? 'Step ' : 'Langkah ') + (index + 1) + (lang === 'en' ? ' of ' : ' dari ') + steps.length;
+        (lang === 'en' ? 'Step ' : 'Langkah ') + (base + index + 1) + (lang === 'en' ? ' of ' : ' dari ') + total
+        + (opts.chapter ? ' \u00b7 ' + opts.chapter : '');
       tip.querySelector('.gt-tip__title').textContent = copy.title;
       typewrite(tip.querySelector('.gt-tip__text'), copy.text);
 
@@ -273,6 +300,9 @@
     var tourId = opts.tourId;
     var container = resolveScope(opts.container);
     var lang = opts.lang || (getState(tourId) && getState(tourId).lang) || 'id';
+    // penomoran global: base tiap screen = jumlah sub-step screen-screen sebelumnya
+    var bases = [], total = 0;
+    screens.forEach(function (scr) { bases.push(total); total += scr.steps.length; });
 
     function renderBar(html) {
       if (!container) return;
@@ -285,9 +315,13 @@
       saveProgress(tourId, { screenIndex: idx, lang: lang });
       clearBar();
       var scr = screens[idx];
+      if (opts.onScreenChange) opts.onScreenChange(idx, scr);
       runScreen(scr.steps, {
         scope: scr.scope,
         lang: lang,
+        base: bases[idx],
+        total: total,
+        chapter: scr.chapter,
         lastButtonLabel: label || { id: 'Lihat hasil', en: 'See result' },
         onSkip: function () { clearProgress(tourId); clearBar(); if (opts.onSkip) opts.onSkip(); },
         onFinish: function () { onScreenDone(idx); },
@@ -304,14 +338,10 @@
           + '  <p>' + (lang === 'en' ? 'You have seen every screen in this flow.' : 'Anda telah melihat seluruh layar pada alur ini.') + '</p>'
           + '  <div class="gt-row">'
           + '    <button type="button" class="gt-primary" data-act="replay">' + (lang === 'en' ? 'Replay' : 'Ulangi') + '</button>'
-          + '    <button type="button" data-act="role">' + (lang === 'en' ? 'Change role' : 'Ganti peran') + '</button>'
           + '    <button type="button" data-act="detail">' + (lang === 'en' ? 'Open detail topics' : 'Buka topik detail') + '</button>'
           + '  </div>'
           + '</div>');
         container.querySelector('[data-act="replay"]').addEventListener('click', function () { startScreen(0); });
-        container.querySelector('[data-act="role"]').addEventListener('click', function () {
-          clearBar(); if (opts.onChangeRole) opts.onChangeRole();
-        });
         container.querySelector('[data-act="detail"]').addEventListener('click', function () {
           clearBar(); if (opts.onOpenDetail) opts.onOpenDetail();
         });
@@ -348,7 +378,7 @@
     screens.forEach(function (scr) {
       var scopeEl = resolveScope(scr.scope);
       report[scr.screenKey] = scr.steps.map(function (s) {
-        var found = !!(scopeEl && scopeEl.querySelector(s.selector));
+        var found = !!lookup(scopeEl, s.selector);
         return { selector: s.selector, found: found };
       });
     });
@@ -360,7 +390,8 @@
       var scopeEl = resolveScope(scr.scope);
       var prev = null;
       report[scr.screenKey] = scr.steps.map(function (s, i) {
-        var el = scopeEl && scopeEl.querySelector(s.selector);
+        if (s.act) return 'ok (closing action)';
+        var el = lookup(scopeEl, s.selector);
         if (!el) return 'NOT FOUND: ' + s.selector;
         var r = el.getBoundingClientRect();
         if (prev) {
@@ -418,7 +449,7 @@
     GuideTour.runSequence(screens, {
       tourId: 'flexform-guide',
       container: '#gwScreenBar', // elemen tempat bar Previous/Replay/Next-screen & kartu Tour complete di-render
-      onChangeRole: function () { }, // isi: balik ke role picker
+      onScreenChange: function (idx, screen) { }, // isi: tandai chip bab + progress bar screen
       onOpenDetail: function () { } // isi: pindah ke topik detail guide
     });
   });

@@ -34,8 +34,11 @@ app), lihat core doc poin 5b (A-F) buat pola gabungannya:
   dalam guide (lewat `scope`, bukan `document.querySelector` global).
 - `${CLAUDE_PLUGIN_ROOT}/template/GUIDE.template.md` — layer detail lengkap (termasuk topik "Quick
   start" — referensi manual self-paced, TERPISAH dari layer Guided Tour di atas).
-- `${CLAUDE_PLUGIN_ROOT}/template/lint-id-text.js` — lint kata casual di teks ID (poin E), WAJIB
-  dijalankan ke semua teks ID yang baru ditulis sebelum declare selesai.
+- `${CLAUDE_PLUGIN_ROOT}/template/lint-id-text.js` — lint kata casual di teks ID + format teks
+  EN/ID (poin E), WAJIB dijalankan ke semua teks yang baru ditulis sebelum declare selesai.
+- `${CLAUDE_PLUGIN_ROOT}/template/tools/` — gate statis (jsdom) contoh kerja: `harness.js`,
+  `ordercheck.js`, `duplicheck.js`, `leakcheck.js` (poin F-2c). Salin ke project output dan
+  sesuaikan blok path/konstanta di bagian atas tiap file.
 
 ## Ringkasan alur
 
@@ -65,11 +68,15 @@ app), lihat core doc poin 5b (A-F) buat pola gabungannya:
 7. Copy keempat skeleton (path yang sudah di-resolve di langkah 1, bukan hasil pencarian lain) ke
    folder output di project user, bukan diedit di `${CLAUDE_PLUGIN_ROOT}/template/` langsung:
    - `guide-walkthrough.template.html` → bangun mock screen SEBAGAI HALAMAN UTUH per screen di alur
-     (urutan screen ngikutin status/lifecycle app, cek ke kode — poin D), role picker kalau
-     multi-role, 1 dialog mock contoh dirender statis (no fixed/absolute, no backdrop sendiri).
+     (urutan screen ngikutin status/lifecycle app, cek ke kode — poin D). SATU tour end-to-end
+     TANPA role picker: semua peran dalam satu urutan alur kerja, dibagi BAB, penomoran langkah
+     GLOBAL 1..N, auto-start saat topik tampil, lanjut dari posisi tersimpan. Layar kembar tidak
+     diulang (satu layar catatan). Varian pakai gambar/data sendiri. Dialog mock dirender statis
+     (no fixed/absolute, no backdrop, CSS modal guide tidak boleh menimpa lebar dialog tiruan).
    - `guide-tour.template.js` → isi array step per screen, selector nunjuk elemen MOCK (`scope`
-     di-set ke screen itu), urut KAKU posisi visual atas->bawah lalu kiri->kanan (poin D), kontrol
-     yang harus diklik jadi sub-step TERAKHIR. Pasang via `GuideTour.runSequence(screens, opts)`.
+     di-set ke screen itu; bagian inti = `[data-core]`), urut KAKU posisi DOM atas->bawah lalu
+     kiri->kanan (poin D), diawali sub-step orientasi, kontrol yang harus diklik boleh diulang
+     sebagai sub-step penutup `act: true`. Pasang via `GuideTour.runSequence(screens, opts)`.
    - `GUIDE.template.md` → isi layer detail (termasuk topik Quick start TERPISAH dari Guided Tour).
    - Teks ID semua formal baku, pakai "Anda", TANPA slang (poin E) — label UI dikutip persis.
 8. Jangan narasikan proses trial-error pencarian sendiri (percobaan salah, branch yang ke-skip,
@@ -80,9 +87,17 @@ app), lihat core doc poin 5b (A-F) buat pola gabungannya:
      sumbernya (guide asli atau kode).
    - Jalankan `GuideTour.verifySelectors(screens)` (browser/jsdom) — semua `found: true`.
    - Jalankan `GuideTour.verifyOrder(screens)` (browser beneran) — semua `'ok'`.
-   - Jalankan `lint-id-text.js` (`GuideLintID.lintAllScreens(screens)` di browser, atau
-     `node lint-id-text.js steps.json`) — kosong, gak ada kata casual.
-   - Buka tour-nya beneran di browser, semua role: no console error, tiap screen kena tour, tooltip
-     gak nutupin target, gak ada area kosong gede (poin B), gak ada dialog mock numpuk kontrol lain.
+   - Jalankan `lint-id-text.js` (`GuideLintID.lintAllScreens(screens)` + `lintFormatAllScreens` di
+     browser, atau `node lint-id-text.js steps.json`) — kosong, gak ada kata casual dan format sesuai.
+   - Jalankan gate statis `template/tools/` (poin F-2c): `harness` 0 notfound, `ordercheck` 0
+     inversi, `duplicheck` 0 duplikat, `leakcheck` 0 bocor. Uji juga gate-nya terhadap versi yang
+     sengaja dirusak supaya terbukti bisa menangkap bug.
+   - Jalankan SELURUH tour dari langkah 1 sampai Finish di browser beneran (1366 dan 1920, plus
+     mobile): no console error, nomor langkah berurutan 1..N, tiap screen kena tour, tooltip gak
+     nutupin target, gak ada area kosong gede (poin B), gak ada dialog mock numpuk kontrol lain,
+     lanjut-dari-posisi-tersimpan jalan. Jangan klaim "sudah dites" kalau browser tidak
+     dijalankan — tulis apa adanya.
+   - Laporkan ke user: (i) temuan yang tampak sebagai bug kode (jangan diubah diam-diam), (ii) klaim
+     yang tidak bisa diverifikasi, (iii) keputusan yang perlu diambil user.
 
 Jangan eksekusi kalau scope module/project ambigu — tanya user dulu.

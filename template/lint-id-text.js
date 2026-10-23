@@ -71,11 +71,41 @@ function lintAllScreens(screens) {
   return all;
 }
 
+
+// Aturan format (poin 5b-E): judul <= 60 karakter, teks <= 300 karakter, diakhiri titik (tanda kutip
+// setelah titik boleh), teks ID tidak identik dengan EN, tidak ada kata casual di EN.
+var CASUAL_WORDS_EN = ['gonna', 'wanna', 'gotta', 'kinda', 'stuff', 'basically', 'actually', 'simply', 'awesome', 'cool', 'oops', 'hey', 'yeah'];
+function lintFormat(steps, screenKey) {
+  var out = [];
+  (steps || []).forEach(function (step, i) {
+    var id = function (msg) { out.push({ screen: screenKey || null, stepIndex: i, issue: msg }); };
+    ['en', 'id'].forEach(function (L) {
+      var c = step[L];
+      if (!c || !c.title || !c.text) { id(L + ' title/text missing'); return; }
+      if (c.title.length > 60) id(L + ' title > 60 chars');
+      if (c.text.length > 300) id(L + ' text > 300 chars (' + c.text.length + ')');
+      if (!/[.:)]("|”)?$/.test(c.text.trim())) id(L + ' text should end with a full stop');
+    });
+    if (step.en && step.id && step.en.text === step.id.text) id('id text identical to en');
+    if (step.en) {
+      CASUAL_WORDS_EN.forEach(function (w) {
+        if (new RegExp('\b' + w + '\b', 'i').test(step.en.title + ' ' + step.en.text)) id('en casual word: ' + w);
+      });
+    }
+  });
+  return out;
+}
+function lintFormatAllScreens(screens) {
+  var all = [];
+  (screens || []).forEach(function (scr) { all = all.concat(lintFormat(scr.steps, scr.screenKey)); });
+  return all;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { lintIdText: lintIdText, lintSteps: lintSteps, lintAllScreens: lintAllScreens, CASUAL_WORDS_ID: CASUAL_WORDS_ID };
+  module.exports = { lintIdText: lintIdText, lintSteps: lintSteps, lintAllScreens: lintAllScreens, lintFormat: lintFormat, lintFormatAllScreens: lintFormatAllScreens, CASUAL_WORDS_ID: CASUAL_WORDS_ID };
 }
 if (typeof window !== 'undefined') {
-  window.GuideLintID = { lintIdText: lintIdText, lintSteps: lintSteps, lintAllScreens: lintAllScreens };
+  window.GuideLintID = { lintIdText: lintIdText, lintSteps: lintSteps, lintAllScreens: lintAllScreens, lintFormat: lintFormat, lintFormatAllScreens: lintFormatAllScreens };
 }
 
 /* ── Contoh pemakaian (hapus di produksi) ───────────────────────────────────────────────────
@@ -90,10 +120,13 @@ if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.m
   }
   var screens = JSON.parse(fs.readFileSync(path, 'utf8'));
   var report = lintAllScreens(screens);
-  if (report.length === 0) {
-    console.log('Lint ID bersih — gak ada kata casual ketemu.');
+  var fmt = lintFormatAllScreens(screens);
+  fmt.forEach(function (f) { console.log('- [' + (f.screen || '?') + ' step ' + f.stepIndex + '] ' + f.issue); });
+  if (report.length === 0 && fmt.length === 0) {
+    console.log('Lint bersih — gak ada kata casual dan format teks sesuai aturan.');
     process.exit(0);
   }
+  if (report.length === 0) process.exit(1);
   console.log('Ketemu ' + report.length + ' teks ID yang kedengeran casual:');
   report.forEach(function (r) {
     console.log('- [' + (r.screen || '?') + ' step ' + r.stepIndex + ' .' + r.field + '] "' + r.text + '" -> kata: ' + r.hits.join(', '));

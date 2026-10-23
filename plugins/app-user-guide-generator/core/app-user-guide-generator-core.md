@@ -103,24 +103,40 @@ luar dirinya sendiri.
 
 ### A. Struktur: Guided Tour adalah topik TERPISAH, bukan bagian dari daftar poin 5
 
-- **Guided Tour jadi topik PERTAMA dan default** saat guide dibuka. Isinya, berurutan: sambutan
-  singkat (1-2 kalimat), role picker (kalau multi-role), lalu tour jalan **otomatis lintas mock
-  screen** begitu role dipilih.
+- **Guided Tour jadi topik PERTAMA dan default** saat guide dibuka. Isinya: sambutan singkat (1-2
+  kalimat), lalu tour **langsung jalan otomatis lintas mock screen dari langkah 1** begitu topiknya
+  tampil — TANPA role picker dan tanpa tombol "mulai". Ini SATU tour end-to-end yang mengikuti
+  perjalanan nyata objek utama app dari awal sampai akhir (mis. daftar -> setup -> evaluasi ->
+  review -> approval -> detail akhir), semua peran dalam satu urutan alur kerja. Peran yang
+  bertanggung jawab di sebuah layar disebut di teks langkahnya, bukan dengan memecah tour per
+  peran. (Quick start per peran boleh ada sebagai referensi manual, tapi bukan pintu masuk tour.)
+- **Penomoran langkah GLOBAL 1..N** lintas semua layar — bubble menampilkan "Step 37 of 395 ·
+  <nama bab>". Gaya isi: "1. Ini halaman list. 2. Ini tombol Refresh, fungsinya ...". Tiap kontrol,
+  sampai yang terkecil, dapat satu langkah.
+- **Bab (chapter)**: tour dibagi bab sesuai fase alur kerja. Tampilkan chip bab yang bisa diklik
+  untuk lompat, progress bar per layar, teks "Chapter x of y · <bab> · Screen a of b", dan tombol
+  "Restart tour". Posisi terakhir disimpan di localStorage (di dalam try/catch) dan dilanjutkan
+  saat guide dibuka lagi.
+- **Layar kembar tidak diulang penuh**: kalau dua layar/varian (mis. dua tipe stage dengan layout
+  identik) pada dasarnya sama, cukup satu layar penuh + SATU layar catatan yang menyebut
+  bedanya. Beda itu harus terverifikasi dari kode, bukan dugaan.
 - **Quick start** (daftar langkah ringkas, self-paced, dibaca manual — BUKAN interaktif) tetap ada
   sebagai topik tersendiri di layer detail (poin 5), terpisah dari Guided Tour.
 - **Alur berkelanjutan**: begitu sub-step TERAKHIR sebuah mock screen selesai (tombol terakhirnya
   diklik), tampilkan hasilnya (lihat "auto-reveal" di bawah), lalu render bar **"Previous screen /
   Replay / Next screen"**. Klik "Next screen" langsung memulai tour mock screen berikutnya — TANPA
   klik tambahan lain (gak ada dialog konfirmasi perantara). Di mock screen terakhir, ganti bar itu
-  jadi kartu **"Tour complete"** berisi: Replay (ulang dari screen 1), Change role (balik ke role
-  picker), Open detail topic (pindah ke layer detail). Posisi terakhir (index screen + bahasa)
-  disimpan di localStorage; tawarkan tombol "Continue" di entry point guide kalau ada progress
-  tersimpan sebelumnya.
+  jadi kartu **"Tour complete"** berisi: Replay (ulang dari screen 1) dan Open detail topic (pindah
+  ke layer detail). Posisi terakhir (index screen + bahasa) disimpan di localStorage dan dipakai
+  sebagai titik mulai saat guide dibuka lagi.
 - **Kontrak engine**: engine tour (lihat poin di bawah) WAJIB menerima (1) `scope` — elemen/selector
   tempat `querySelector` dibatasi, BUKAN pencarian global `document.querySelector`; (2) callback
   `onFinish`/`onSkip`; (3) label tombol sub-step terakhir yang bisa di-override (defaultnya bukan
-  "Selesai" kalau abis ini lanjut ke screen berikutnya, tapi semacam "Lihat hasil"/"See result").
-  Target yang masih `hidden` di panel hasil WAJIB ke-reveal otomatis oleh engine, bukan nunggu klik.
+  "Selesai" kalau abis ini lanjut ke screen berikutnya, tapi semacam "Lihat hasil"/"See result");
+  (4) `base` + `total` (offset dan total untuk penomoran global) dan `chapter` (label bab);
+  (5) pencarian target DULU di dalam bagian inti layar (`[data-core]`), baru di seluruh layar, supaya
+  konteks halaman di sekitarnya tidak bikin selector nyasar. Target yang masih `hidden` di panel
+  hasil WAJIB ke-reveal otomatis oleh engine, bukan nunggu klik.
 
 ### B. Layout: manfaatkan seluruh lebar modal
 
@@ -139,18 +155,34 @@ luar dirinya sendiri.
   BUKAN backdrop gelap/`position:fixed` yang nutupin konteks (lihat implementasi di
   `guide-tour.template.js`, fungsi `applyDimTarget`). Selector sub-step boleh nunjuk kontrol di
   mana aja dalam halaman itu (gak harus elemen yang paling mencolok).
+- Header/status/stepper di mock screen **mengikuti logika dan label dari kode app** untuk status yang
+  ditampilkan layar itu (badge, langkah aktif, tombol yang boleh muncul pada status itu) — bukan
+  karangan, dan bukan salinan status lain.
+- Tiap potongan halaman (stepper, kartu, header dokumen, toolbar beserta tombolnya, panel) muncul
+  **SATU kali** per layar. Penyebab umum duplikat: potongan inti sudah ditempatkan oleh langkah
+  "sisa potongan", lalu slot khususnya membuat salinan baru.
+- **Varian punya gambar sendiri**: layar untuk varian (mis. tipe stage B) memakai contoh dan data
+  varian itu — filter, kolom, parameter, kartu yang aktif — bukan salinan varian A. Kebocoran data
+  varian lain (mesin/batch di layar yang tidak punya konsep itu) dianggap salah.
 - Dialog/modal yang jadi BAGIAN dari mock screen (misal mockup dialog konfirmasi/hasil) **wajib
   dirender statis di alur dokumen** — tanpa `position:fixed`/`absolute`, tanpa offset manual, tanpa
   backdrop sendiri — dan **gak boleh menutupi kontrol lain atau tombolnya sendiri**. Verifikasi
   wajib: gak ada bounding box elemen interaktif yang tumpang tindih dengan dialog manapun (poin F).
+  CSS milik modal guide sendiri (mis. `max-width` pada `.modal-dialog`) **tidak boleh menimpa dialog
+  tiruan di dalam mock**: pakai child combinator (`.guide-modal > .modal-dialog`), bukan descendant.
+  Cek di browser bahwa lebar dialog tiruan wajar dan `elementFromPoint` di tengah tiap tombolnya
+  mengembalikan tombol itu sendiri.
 
 ### D. Urutan
 
 - Sub-step di tiap mock screen diurutkan **kaku**: atas ke bawah, lalu kiri ke kanan, sesuai posisi
   visual elemen di layar (bukan urutan penulisan di kode, bukan urutan "kepentingan").
-- Kontrol yang HARUS diklik user (buat lanjut ke screen berikutnya) jadi **sub-step terakhir
-  tersendiri** — tapi urutan visual tetap dipegang; gak boleh "dipaksa jadi terakhir" kalau posisi
-  visualnya di tengah-tengah, kecuali kontrolnya memang berada paling bawah/kanan secara visual.
+- Kontrol yang HARUS diklik user dijelaskan di **posisi alaminya** (urutan visual tetap dipegang),
+  lalu BOLEH ditambah satu sub-step penutup berjudul "Next action: ..." dengan selector yang sama
+  dan properti `act: true`. Sub-step `act` dikecualikan dari cek urutan karena memang mengulang
+  kontrol yang sudah dijelaskan.
+- Tiap layar halaman penuh **diawali satu sub-step orientasi** ("Ini halaman X, status Y, langkah
+  Z") yang diambil dari logika kode app, supaya pengguna tahu sedang berada di mana.
 - Urutan mock screen (screen 1, 2, 3, dst) mengikuti **alur kerja nyata app** (status/lifecycle-nya,
   lihat poin 5's "Status / lifecycle" kalau module-nya punya workflow state) — diverifikasi
   terhadap kode (controller/constants yang mendefinisikan urutan status), bukan ditebak.
@@ -162,7 +194,8 @@ luar dirinya sendiri.
 - **ID**: bahasa formal baku, pakai "Anda" (bukan "lu"/"kamu"), TANPA slang atau campur kode casual
   — istilah teknis dan label UI tetap dalam bahasa aslinya (jangan dipaksa terjemahin "Submit" jadi
   "Kirim" kalau tombolnya emang tertulis "Submit").
-- Judul tiap sub-step = nama kontrol atau nama tindakannya (bukan kalimat panjang).
+- Judul tiap sub-step = nama kontrol atau nama tindakannya (maks 60 karakter); teks maks 300
+  karakter, maks 2 kalimat, diakhiri titik. Teks ID tidak boleh identik dengan EN.
 - **Lint wajib**: sebelum declare selesai, scan semua teks ID yang baru ditulis, tolak kalau
   mengandung kata casual (daftar minimal: `gak`, `banget`, `dong`, `nih`, `lu`, `gue`/`gua`, `yaa`,
   `deh`, `sih`, `nya` berlebihan, `kayak`/`kyk`) — ini ATURAN KONTEN GUIDE yang dihasilkan untuk
@@ -182,10 +215,20 @@ luar dirinya sendiri.
    laporkan & perbaiki yang `found: false`.
 2b. Cek urutan visual pakai `GuideTour.verifyOrder(screens)` (BUTUH browser beneran, bukan jsdom) —
    laporkan & perbaiki step manapun yang keluar dari aturan D.
-3. **Jalankan seluruh tour, semua role, di browser beneran**: pastikan (a) gak ada error di
-   console, (b) gak ada mock screen yang kelewat tanpa tour-nya (setiap screen yang didaftarkan di
-   alur kena tour), (c) tooltip gak pernah menutupi targetnya sendiri, (d) gak ada area kosong
-   besar yang kelihatan (poin B), (e) gak ada dialog mock yang tumpang tindih kontrol lain (poin C).
+2c. **Gate statis (jsdom) — referensi di `template/tools/`**: `harness.js` (tiap sub-step menemukan
+   elemennya di halaman rakitan, 0 notfound), `ordercheck.js` (urutan DOM atas->bawah, kiri->kanan,
+   0 inversi; `act:true` dilewati), `duplicheck.js` (tiap potongan halaman sekali per layar, 0
+   duplikat), `leakcheck.js` (layar varian tidak memuat data varian lain, 0 bocor), `lint-id-text.js`
+   (kata casual ID/EN + format teks, 0 isu). Skrip-skrip ini contoh kerja dari satu proyek: sesuaikan blok
+   path/konstanta di bagian atas tiap file ke proyek target. Uji juga pengecek itu sendiri terhadap
+   versi yang sengaja dirusak, supaya terbukti bisa menangkap bug (mis. potongan dobel).
+3. **Jalankan SELURUH tour dari langkah 1 sampai Finish di browser beneran**, di viewport 1366 dan
+   1920 (dan mobile): pastikan (a) gak ada error di console, (b) nomor langkah berurutan 1..N dan
+   gak ada mock screen yang kelewat tanpa tour-nya, (c) tooltip gak pernah menutupi targetnya
+   sendiri, (d) gak ada area kosong besar yang kelihatan (poin B), (e) gak ada dialog mock yang
+   tumpang tindih kontrol lain (poin C), (f) lanjut-dari-posisi-tersimpan berfungsi. Jangan
+   menyatakan "sudah dites" kalau browser tidak benar-benar dijalankan; tulis apa adanya dan
+   sebutkan yang belum teruji.
 
 Skeleton siap pakai: [`template/guide-tour.template.js`](../template/guide-tour.template.js) (engine
 `runScreen`/`runSequence`/`verifySelectors`/`verifyOrder` — generic, `selector`/`scope`-nya
@@ -193,7 +236,7 @@ diarahkan ke elemen DI DALAM mock screen guide, bukan ke elemen real app) dipasa
 mock screen dari [`template/guide-walkthrough.template.html`](../template/guide-walkthrough.template.html).
 
 Sudah ada contoh kerja arah pola ini (bukan konsep kosong) di `examples/iclause-user-guide/GUIDE.md`
-bagian "Quick start" — role picker, mock UI field mirip form asli, highlight animasi, reveal
+bagian "Quick start" — pilih peran, mock UI field mirip form asli, highlight animasi, reveal
 "what happens", progress Back/Next, semuanya di dalam modal guide (versi sebelum pola Guided Tour
 di atas diformalkan — treat sebagai bukti konsep, bukan contoh struktur final). Bagian lain di file
 yang sama (Overview s/d FAQ) itu layer detailnya.

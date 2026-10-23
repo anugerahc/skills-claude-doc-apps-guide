@@ -24,7 +24,7 @@ paling penting:
    string exact, jangan ngarang.
 4. Guide-nya 2 layer digabung (poin 5b core doc), SEMUA di dalam guide — gak ada overlay di halaman
    real app: layer Guided Tour = mock screen gaya tutorial game (niru UI form asli, highlight
-   animasi, reveal "what happens", role picker kalau multi-role; skeleton
+   animasi, reveal "what happens", satu tour end-to-end tanpa role picker (bab + penomoran global); skeleton
    `_app-user-guide-generator/template/guide-walkthrough.template.html`) + engine coachmark
    granular di atasnya (sampai tombol terkecil, toggle EN/ID, typewriter; skeleton
    `_app-user-guide-generator/template/guide-tour.template.js` — selector nunjuk elemen MOCK di
