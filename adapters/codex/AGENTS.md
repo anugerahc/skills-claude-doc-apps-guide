@@ -17,6 +17,8 @@ Saat user minta dibuatkan user guide/dokumentasi cara-pakai untuk sebuah module:
 4. Gak ketemu → rekonstruksi dari kode: view (label asli) → JS (dialog/validasi) → controller
    (pesan server) → constants/enum (nama status/role). Dilarang ngarang string yang "kedengerannya
    masuk akal".
-5. Pakai skeleton `_app-user-guide-generator/template/GUIDE.template.md` — isi placeholder saja.
+5. Bangun 2 layer: IK interaktif (walkthrough E2E, mock UI + highlight animasi, skeleton
+   `_app-user-guide-generator/template/guide-walkthrough.template.html`, ditampilkan duluan) + detail
+   lengkap (skeleton `_app-user-guide-generator/template/GUIDE.template.md`) — poin 5b core doc.
 6. Jangan narasikan proses trial-error pencarian sendiri di dalam dokumen final.
 7. Kalau module/app atau maksud "guide"-nya ambigu, tanya user dulu sebelum mulai.

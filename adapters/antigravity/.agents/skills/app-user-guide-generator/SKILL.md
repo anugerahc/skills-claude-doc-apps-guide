@@ -22,8 +22,12 @@ untuk 1 module tertentu dalam sebuah app.
    dialog) → controller (pesan server) → constants/enum (nama status/role).
 4. Kalau guide bawaan ketemu: extract verbatim, cuma strip markup, jangan reword kalimat/nama
    tombol/pesan error.
-5. Copy skeleton `_app-user-guide-generator/template/GUIDE.template.md` ke folder output, isi
-   `{{PLACEHOLDER}}`-nya dengan hasil extract/investigasi.
+5. Bangun 2 layer, gabung dalam 1 guide: layer **IK interaktif** (walkthrough E2E gaya tutorial
+   game — mock UI tangan niru form asli, highlight animasi di target klik, reveal "what happens",
+   role picker kalau multi-role; skeleton `_app-user-guide-generator/template/guide-walkthrough.template.html`)
+   DITAMPILKAN DULUAN, lalu layer **detail lengkap** (skeleton
+   `_app-user-guide-generator/template/GUIDE.template.md`) nempel di sebelahnya/di baliknya — lihat
+   core doc poin 5b.
 6. Jangan narasikan proses trial-error pencarian sendiri di dalam dokumen final — itu buat laporan
    ke user di chat, bukan buat isi guide.
 7. Verifikasi hasil sebelum lapor selesai: label tombol & pesan error di guide match sama yang ada

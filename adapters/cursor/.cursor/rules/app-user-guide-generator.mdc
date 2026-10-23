@@ -15,6 +15,9 @@ Ringkasan cepat:
   error.
 - Gak ketemu → rekonstruksi: view (label asli) → JS (dialog/validasi) → controller (pesan server)
   → constants/enum (nama status/role). Jangan ngarang label yang "kedengerannya masuk akal".
-- Pakai skeleton `_app-user-guide-generator/template/GUIDE.template.md` — isi placeholder saja.
+- 2 layer digabung: IK interaktif (walkthrough E2E, mock UI + highlight animasi, role picker kalau
+  multi-role, skeleton `_app-user-guide-generator/template/guide-walkthrough.template.html`,
+  ditampilkan duluan) + detail lengkap (skeleton
+  `_app-user-guide-generator/template/GUIDE.template.md`) — poin 5b core doc.
 - Jangan narasikan proses trial-error pencarian sendiri di dalam dokumen final.
 - Module/app atau maksud "guide" ambigu → tanya user dulu, jangan asumsi.

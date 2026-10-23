@@ -10,7 +10,8 @@ ChatGPT/Gemini.
 
 ```
 core/app-user-guide-generator-core.md   ← metodologi lengkap (sumber kebenaran tunggal)
-template/GUIDE.template.md              ← skeleton guide siap-isi
+template/guide-walkthrough.template.html ← skeleton layer IK interaktif (walkthrough E2E, mock UI + animasi)
+template/GUIDE.template.md              ← skeleton layer detail lengkap
 adapters/                                ← file aktivasi per tool (Claude Code, Antigravity, Kiro, Cursor, Codex)
 install.sh / install.ps1                 ← installer otomatis, deteksi tool & pasang adapter yang cocok
 INSTALL.md                               ← panduan instalasi manual (kalau gak mau pakai script)

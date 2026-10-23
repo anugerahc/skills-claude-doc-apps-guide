@@ -15,13 +15,15 @@ description: Use when asked to write, generate, or extract an end-user guide / h
 >
 > **Read-only terhadap diri sendiri.** `${CLAUDE_PLUGIN_ROOT}/core` dan
 > `${CLAUDE_PLUGIN_ROOT}/template` TIDAK BOLEH ditulis/diedit — itu bundle plugin, bukan folder
-> kerja. Copy `template/GUIDE.template.md` ke lokasi output di project user dulu, baru edit
-> salinannya di sana.
+> kerja. Copy `template/guide-walkthrough.template.html` dan `template/GUIDE.template.md` ke lokasi
+> output di project user dulu, baru edit salinannya di sana.
 
 Sumber metodologi lengkap (WAJIB dibaca dulu sebelum eksekusi):
 `${CLAUDE_PLUGIN_ROOT}/core/app-user-guide-generator-core.md`
 
-Skeleton siap-isi: `${CLAUDE_PLUGIN_ROOT}/template/GUIDE.template.md`
+Skeleton siap-isi: `${CLAUDE_PLUGIN_ROOT}/template/guide-walkthrough.template.html` (layer IK
+interaktif, ditampilkan duluan) + `${CLAUDE_PLUGIN_ROOT}/template/GUIDE.template.md` (layer detail
+lengkap) — pola gabungannya ada di core doc poin 5b.
 
 ## Ringkasan alur
 
@@ -48,9 +50,11 @@ Skeleton siap-isi: `${CLAUDE_PLUGIN_ROOT}/template/GUIDE.template.md`
    → JS client-side (dialog konfirmasi, pesan validasi) → controller/API (pesan server) →
    constants/enum (nama status/role, mapping `GetLabel()`-style). Kutip string exact — dilarang
    ngarang label yang "kedengerannya masuk akal".
-7. Copy `${CLAUDE_PLUGIN_ROOT}/template/GUIDE.template.md` (path yang sudah di-resolve di langkah
-   1, bukan hasil pencarian lain) ke folder output di project user — isi section demi section di
-   SALINAN itu, bukan di `${CLAUDE_PLUGIN_ROOT}/template/`.
+7. Copy kedua skeleton (path yang sudah di-resolve di langkah 1, bukan hasil pencarian lain) ke
+   folder output di project user, bukan diedit di `${CLAUDE_PLUGIN_ROOT}/template/` langsung:
+   - `guide-walkthrough.template.html` → bangun layer IK interaktif duluan (walkthrough E2E, mock
+     UI niru form asli, highlight animasi, role picker kalau multi-role).
+   - `GUIDE.template.md` → isi layer detail lengkap, nempel/terhubung ke layer IK yang sama.
 8. Jangan narasikan proses trial-error pencarian sendiri (percobaan salah, branch yang ke-skip,
    dst) di DALAM dokumen final — itu buat laporan ke user di chat, bukan isi guide.
 9. Sebelum declare selesai: grep hasil akhir cari `{{` yang kelewat, dan cek label tombol/pesan

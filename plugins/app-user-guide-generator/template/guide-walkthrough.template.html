@@ -1,0 +1,170 @@
+<!--
+  Skeleton layer "IK interaktif" — pola dari core doc poin 5b. Framework-agnostic: CSS/JS inline,
+  vanilla, gak gantung library apapun, tinggal copy ke dalam modal/halaman guide proyek target dan
+  isi {{PLACEHOLDER}}. Mock UI di sini styling-nya generic (abu-abu/putih) — GANTI warna/komponen
+  biar niru tampilan form asli project target (jangan dipakai mentah-mentah warnanya).
+
+  Struktur: role picker (opsional, skip kalau module cuma 1 role) -> walkthrough (progress dots +
+  step panel: mock UI, target di-highlight, tombol reveal "what happens", Back/Next).
+  Layer detail (poin 5: Overview/Roles/Lifecycle/step-by-step/Button index/FAQ) nempel di luar file
+  ini, biasanya sebagai tab/nav terpisah di modal/halaman guide yang sama — lihat
+  template/GUIDE.template.md buat kontennya.
+-->
+<div class="gw-root" id="gwRoot">
+
+  <!-- ── Role picker (hapus kalau module cuma 1 persona) ─────────────────── -->
+  <div class="gw-roles" id="gwRoles">
+    <p class="gw-roles__lead">Pilih peran Anda buat mulai simulasi:</p>
+    <div class="gw-roles__grid">
+      <button type="button" class="gw-role" data-role="{{ROLE_1_KEY}}">
+        <span class="gw-role__title">{{ROLE_1_LABEL}}</span>
+        <span class="gw-role__desc">{{ROLE_1_SHORT_DESC}}</span>
+      </button>
+      <button type="button" class="gw-role" data-role="{{ROLE_2_KEY}}">
+        <span class="gw-role__title">{{ROLE_2_LABEL}}</span>
+        <span class="gw-role__desc">{{ROLE_2_SHORT_DESC}}</span>
+      </button>
+      <!-- ... ulangi per role ... -->
+    </div>
+  </div>
+
+  <!-- ── Walkthrough per role (satu blok per data-role, disembunyiin sampe role dipilih) ── -->
+  <div class="gw-walk" data-walk-for="{{ROLE_1_KEY}}" hidden>
+
+    <div class="gw-progress">
+      <span class="gw-progress__dot gw-progress__dot--current" data-step="1"></span>
+      <span class="gw-progress__dot" data-step="2"></span>
+      <span class="gw-progress__dot" data-step="3"></span>
+      <!-- ... 1 dot per langkah ... -->
+    </div>
+
+    <!-- Satu .gw-step per langkah; cuma yang .gw-step--current yang keliatan -->
+    <section class="gw-step gw-step--current" data-step="1">
+      <h3 class="gw-step__title">{{STEP_1_TITLE}}</h3>
+      <p class="gw-step__instruction">{{STEP_1_INSTRUCTION}}</p>
+
+      <!-- Mock UI — niru layout form asli pakai markup biasa, styling disesuaikan per project -->
+      <div class="gw-mock">
+        <div class="gw-mock__row">
+          <label class="gw-mock__field">{{FIELD_LABEL}}
+            <span class="gw-mock__input">{{FIELD_EXAMPLE_VALUE}}</span>
+          </label>
+          <!-- target yang mesti diklik user di langkah ini -->
+          <button type="button" class="gw-mock__btn gw-hl" data-reveal="reveal-1">
+            {{BUTTON_LABEL}}
+          </button>
+        </div>
+      </div>
+
+      <!-- Reveal panel: disembunyiin sampe tombol di-highlight itu diklik -->
+      <div class="gw-reveal" id="reveal-1" hidden>
+        <p class="gw-reveal__label">Yang terjadi setelah diklik:</p>
+        <div class="gw-reveal__dialog">{{MOCK_DIALOG_OR_RESULT_TEXT}}</div>
+      </div>
+
+      <div class="gw-nav">
+        <button type="button" class="gw-nav__back" disabled>Kembali</button>
+        <button type="button" class="gw-nav__next">Lanjut</button>
+      </div>
+    </section>
+
+    <!-- ... ulangi <section class="gw-step" data-step="2"> dst, tanpa class --current ... -->
+
+  </div>
+  <!-- ... ulangi blok .gw-walk per role ... -->
+
+</div>
+
+<style>
+  .gw-root { font: 14px/1.5 system-ui, sans-serif; color: #2b3230; }
+
+  .gw-roles__lead { font-weight: 600; margin-bottom: .6rem; }
+  .gw-roles__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .gw-role { text-align: left; border: 1px solid #dde4e0; background: #fff; border-radius: 12px;
+    padding: 12px 14px; cursor: pointer; transition: all .15s; }
+  .gw-role:hover { border-color: #1f9d57; transform: translateY(-2px); }
+  .gw-role__title { display: block; font-weight: 700; }
+  .gw-role__desc { display: block; font-size: .85em; color: #6c757d; margin-top: 2px; }
+
+  .gw-progress { display: flex; gap: 6px; margin-bottom: 1rem; }
+  .gw-progress__dot { flex: 1; height: 6px; border-radius: 3px; background: #e3e8e5; }
+  .gw-progress__dot--done { background: #9bd5b5; }
+  .gw-progress__dot--current { background: #1f9d57; }
+
+  .gw-step { display: none; }
+  .gw-step--current { display: block; }
+  .gw-step__title { margin: 0 0 .25rem; }
+  .gw-step__instruction { color: #5e6b66; margin: 0 0 .8rem; }
+
+  /* mock UI — GANTI token warna/radius ini biar niru theme project target */
+  .gw-mock { border: 1px solid #dde4e0; border-radius: 10px; background: #fafcfb; padding: 14px;
+    display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: .8rem; }
+  .gw-mock__row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; width: 100%; }
+  .gw-mock__field { display: flex; flex-direction: column; gap: 4px; font-size: .85em; color: #6c757d; }
+  .gw-mock__input { background: #fff; border: 1px solid #cfd6d2; border-radius: 6px; padding: 5px 10px;
+    color: #2b3230; min-width: 140px; }
+  .gw-mock__btn { border: 0; border-radius: 8px; padding: 8px 16px; font-weight: 600; cursor: pointer;
+    background: #1f9d57; color: #fff; }
+
+  /* elemen yang harus diklik tiap langkah — pulsing highlight, INI yang bikin kerasa "game tutorial" */
+  .gw-hl { outline: 3px solid rgba(255, 159, 67, .9); outline-offset: 3px;
+    animation: gwPulse 1.6s ease-in-out infinite; }
+  @keyframes gwPulse { 0%, 100% { outline-color: rgba(255, 159, 67, .9); } 50% { outline-color: rgba(255, 159, 67, .2); } }
+  @media (prefers-reduced-motion: reduce) { .gw-hl { animation: none; } }
+
+  .gw-reveal { background: #eef7f1; border: 1px solid #cfe9da; border-left: 4px solid #1f9d57;
+    border-radius: 10px; padding: 10px 14px; margin-bottom: .8rem; }
+  .gw-reveal__label { font-size: .72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: #1f9d57; margin: 0 0 4px; }
+  .gw-reveal__dialog { background: #fff; border: 1px dashed #b9c4be; border-radius: 8px; padding: 10px 12px; }
+
+  .gw-nav { display: flex; justify-content: space-between; }
+  .gw-nav button { border: 1px solid #1f9d57; background: #fff; color: #1f9d57; border-radius: 8px;
+    padding: 6px 16px; font-weight: 600; cursor: pointer; }
+  .gw-nav button:not(:disabled):hover, .gw-nav__next { background: #1f9d57; color: #fff; }
+  .gw-nav button:disabled { opacity: .35; cursor: default; }
+</style>
+
+<script>
+  // Vanilla, no deps. Wiring: role pick -> show walkthrough, reveal-on-click, Back/Next step nav.
+  (function () {
+    var root = document.getElementById('gwRoot');
+    if (!root) return;
+
+    root.querySelectorAll('.gw-role').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var role = btn.dataset.role;
+        root.querySelector('#gwRoles').hidden = true;
+        var walk = root.querySelector('.gw-walk[data-walk-for="' + role + '"]');
+        if (walk) walk.hidden = false;
+      });
+    });
+
+    root.querySelectorAll('.gw-hl[data-reveal]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var panel = document.getElementById(btn.dataset.reveal);
+        if (panel) panel.hidden = false;
+      });
+    });
+
+    root.querySelectorAll('.gw-walk').forEach(function (walk) {
+      var steps = Array.prototype.slice.call(walk.querySelectorAll('.gw-step'));
+      var dots = Array.prototype.slice.call(walk.querySelectorAll('.gw-progress__dot'));
+
+      function goTo(index) {
+        steps.forEach(function (s, i) { s.classList.toggle('gw-step--current', i === index); });
+        dots.forEach(function (d, i) {
+          d.classList.toggle('gw-progress__dot--current', i === index);
+          d.classList.toggle('gw-progress__dot--done', i < index);
+        });
+      }
+
+      walk.querySelectorAll('.gw-nav__next').forEach(function (btn, i) {
+        btn.addEventListener('click', function () { goTo(Math.min(i + 1, steps.length - 1)); });
+      });
+      walk.querySelectorAll('.gw-nav__back').forEach(function (btn, i) {
+        btn.addEventListener('click', function () { goTo(Math.max(i - 1, 0)); });
+      });
+    });
+  })();
+</script>

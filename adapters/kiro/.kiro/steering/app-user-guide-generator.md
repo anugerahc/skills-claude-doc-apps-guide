@@ -22,8 +22,11 @@ paling penting:
 3. Gak ketemu guide bawaan → rekonstruksi dari kode, urut: view (label/tombol asli) → JS (dialog
    konfirmasi/validasi) → controller (pesan server) → constants/enum (nama status/role). Kutip
    string exact, jangan ngarang.
-4. Struktur output ikutin app-nya sendiri kalau ada nav/TOC; kalau gak ada, pakai skeleton
-   `_app-user-guide-generator/template/GUIDE.template.md`.
+4. Guide-nya 2 layer digabung: IK interaktif (walkthrough E2E gaya tutorial game — mock UI niru form
+   asli, highlight animasi di target klik, reveal "what happens", role picker kalau multi-role;
+   skeleton `_app-user-guide-generator/template/guide-walkthrough.template.html`) ditampilkan
+   DULUAN, baru layer detail lengkap (skeleton `_app-user-guide-generator/template/GUIDE.template.md`)
+   — poin 5b core doc.
 5. Jangan narasikan proses trial-error pencarian sendiri di dalam dokumen final.
 
 Kalau module/app yang dimaksud, atau maksud "guide"-nya (cara-pakai vs dokumen domain-bisnis),

@@ -87,7 +87,43 @@ Ikutin struktur app-nya sendiri kalau ada (poin 3). Kalau gak ada, default yang 
 - Button index (alfabetis, cross-reference ke step yang relevan)
 - FAQ / lookup pesan error (string error verbatim → artinya / cara ngatasinnya)
 
-Skeleton siap-isi: [`template/GUIDE.template.md`](../template/GUIDE.template.md).
+Skeleton siap-isi: [`template/GUIDE.template.md`](../template/GUIDE.template.md) (konten layer
+detail) + [`template/guide-walkthrough.template.html`](../template/guide-walkthrough.template.html)
+(tampilan layer IK, lihat poin 5b).
+
+## 5b. Format tampilan: IK interaktif (layer depan) + detail (layer dalam)
+
+Konten lengkap (poin 5) itu beda hal sama **cara dia ditampilin**. Dua hal ini DIGABUNG dalam satu
+guide, bukan pilih salah satu:
+
+1. **Layer IK (Instruksi Kerja) interaktif — yang pertama keliatan saat guide dibuka.** Simulasi
+   1 alur end-to-end, langkah demi langkah, gaya tutorial onboarding game:
+   - Mock UI tiap langkah dibangun ulang pakai HTML/CSS tangan (bukan screenshot/iframe) — niru
+     layout, warna, dan label field dari form asli, supaya kerasa "beneran di app" tapi tetap bisa
+     dianimasiin bebas dan gak basi kalau UI aslinya geser dikit.
+   - Elemen yang harus diklik di tiap langkah dikasih highlight animasi (outline pulsing/glow) biar
+     mata user langsung ketarik ke situ, gak perlu baca paragraf panjang buat nemuin "klik di mana".
+   - Klik elemen yang di-highlight → reveal panel "apa yang terjadi" (mockup dialog konfirmasi,
+     pesan sukses/error, state abis itu) — bukan auto-expand, dipicu interaksi biar kerasa kayak
+     beneran nyoba, bukan baca.
+   - Progress indicator + tombol Back/Next di antara langkah.
+   - Kalau module-nya punya beberapa role/persona beda alur (PIC vs reviewer vs approver, dst) —
+     kasih role picker di awal, user pilih dulu baru masuk walkthrough sesuai rolenya.
+   - Data di contoh (nama, nomor, tanggal) SEMUA karangan/placeholder, dikasih keterangan eksplisit
+     "contoh, bukan data asli" — ini visual mockup, bukan hasil live-query data sungguhan.
+2. **Layer detail — tetep ada, diakses dari dalam guide yang sama** (nav/topic list/search), isinya
+   struktur lengkap poin 5 (Overview, Roles, Lifecycle, step-by-step per screen, Button index, FAQ)
+   — buat kasus yang gak ke-cover walkthrough E2E (edge case, pesan error spesifik, role yang gak
+   dijalanin di walkthrough).
+
+Sudah ada contoh kerja pola ini (bukan konsep kosong) di `examples/iclause-user-guide/GUIDE.md`
+bagian "Quick start" — role picker, mock UI field mirip form asli, highlight animasi, reveal
+"what happens", progress Back/Next — persis pola di atas, cuma kemarin belum diformalkan jadi
+pattern tersendiri. Bagian lain di file yang sama (Overview s/d FAQ) itu layer detailnya.
+
+Modal `#modalFlexFormGuide` (accordion collapsed, liat langsung di module Flex Form Builder) BUKAN
+pola ini — itu lebih statis/kurang menarik dibanding yang dimaksud di sini, jangan dipakai sebagai
+acuan tampilan.
 
 ## 6. Kemas jadi skill portable
 
