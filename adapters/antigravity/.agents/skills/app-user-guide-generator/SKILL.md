@@ -22,13 +22,13 @@ untuk 1 module tertentu dalam sebuah app.
    dialog) → controller (pesan server) → constants/enum (nama status/role).
 4. Kalau guide bawaan ketemu: extract verbatim, cuma strip markup, jangan reword kalimat/nama
    tombol/pesan error.
-5. Bangun 3 layer, gabung dalam 1 guide (poin 5b/5c core doc): layer **Tour/Coachmark** (skeleton
-   `_app-user-guide-generator/template/guide-tour.template.js` — otomatis jalan duluan, nempel ke
-   elemen ASLI di halaman, granular sampai tombol terkecil, lintas halaman, toggle EN/ID) → layer
-   **IK interaktif** (walkthrough E2E gaya tutorial game, mock UI tangan niru form asli, highlight
-   animasi, reveal "what happens", role picker kalau multi-role; skeleton
-   `_app-user-guide-generator/template/guide-walkthrough.template.html`, dibuka manual) → layer
-   **detail lengkap** (skeleton `_app-user-guide-generator/template/GUIDE.template.md`).
+5. Bangun 2 layer, gabung dalam 1 guide (poin 5b core doc) — SEMUA di dalam guide, gak ada yang
+   overlay di halaman real app: layer **Guided Tour** = mock screen tangan niru UI app asli
+   (skeleton `_app-user-guide-generator/template/guide-walkthrough.template.html`) + engine
+   coachmark di atasnya (skeleton `_app-user-guide-generator/template/guide-tour.template.js` —
+   selector-nya nunjuk elemen MOCK di dalam guide, bukan elemen app asli; granular sampai tombol
+   terkecil, toggle EN/ID, typewriter) → layer **detail lengkap** (skeleton
+   `_app-user-guide-generator/template/GUIDE.template.md`).
 6. Jangan narasikan proses trial-error pencarian sendiri di dalam dokumen final — itu buat laporan
    ke user di chat, bukan buat isi guide.
 7. Verifikasi hasil sebelum lapor selesai: label tombol & pesan error di guide match sama yang ada

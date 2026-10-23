@@ -1,21 +1,30 @@
 /*
- * Skeleton product-tour / coachmark engine — pola dari core doc poin 5c. Vanilla JS, no deps,
- * nempel ke CSS/HTML halaman manapun. Satu file ini di-include di SETIAP halaman real app yang
- * mau di-tour, dengan step list punya halaman itu doang (lihat contoh paling bawah file ini).
+ * Skeleton coachmark/spotlight engine — pola dari core doc poin 5b. Vanilla JS, no deps.
+ *
+ * PENTING — target-nya SELALU elemen di dalam guide/modal "User Guide" itu sendiri (mock screen
+ * hand-built dari template/guide-walkthrough.template.html), BUKAN PERNAH elemen di halaman real
+ * app yang sedang dipakai user buat kerja beneran. Guide gak boleh nyuntik overlay ke luar dirinya
+ * sendiri. `selector` di tiap step harus nunjuk ke elemen mock di dalam markup guide (misal
+ * `#gwRoot [data-mock="btnSubmit"]`), bukan ke `document.querySelector('#btnSubmit')` punya
+ * halaman asli.
+ *
+ * "pageKey" di bawah ini artinya MOCK SCREEN di dalam guide (lihat .gw-walk/.gw-step di
+ * guide-walkthrough.template.html) — bukan halaman browser beneran. State di localStorage cuma
+ * dipakai biar kalau modal guide ditutup-buka lagi, posisi tour-nya keinget; itu bukan mekanisme
+ * buat "ngikutin" navigasi real app.
  *
  * API:
  *   GuideTour.init(steps, { tourId, pageKey, lang })
- *     -> daftarin tour buat halaman ini. Auto-mulai dari step 1 KALAU tour-nya belum pernah
- *        di-dismiss DAN pageKey ini belum pernah "selesai" di-tour sebelumnya (state di
- *        localStorage, persist lintas reload/halaman — itu yang bikin tour-nya nyambung lintas
- *        halaman tanpa perlu backend apapun).
+ *     -> daftarin tour buat mock screen ini (satu .gw-step/.gw-walk block). Auto-mulai dari step 1
+ *        KALAU tour-nya belum pernah di-dismiss DAN mock screen ini belum pernah "selesai"
+ *        di-tour sebelumnya.
  *   GuideTour.start(steps, { tourId, pageKey, lang })
  *     -> paksa mulai dari step 1 TERLEPAS dari state tersimpan. Pasang ini ke tombol
- *        "Mulai Tour"/"Take a Tour" manual.
+ *        "Mulai Tour"/"Take a Tour" manual di dalam guide.
  *
- * steps: [{ selector: 'CSS selector elemen ASLI', en: { title, text }, id: { title, text } }, ...]
- * Granularitas: SATU step per kontrol yang bisa dipencet user di halaman itu — termasuk tombol
- * kecil/icon-only, bukan cuma aksi utama (poin 5c core doc).
+ * steps: [{ selector: 'CSS selector elemen mock DI DALAM GUIDE', en: { title, text }, id: { title, text } }, ...]
+ * Granularitas: SATU step per kontrol di mock screen itu — termasuk tombol kecil/icon-only, bukan
+ * cuma aksi utama (poin 5b core doc).
  */
 (function (global) {
   'use strict';
@@ -120,7 +129,7 @@
       return el;
     }
 
-    // Lewatin step yang elemennya gak ketemu di halaman ini (belum render/hidden) — jangan
+    // Lewatin step yang elemennya gak ketemu di mock screen ini (belum render/hidden) — jangan
     // crash, lanjut ke step valid berikutnya; kalau gak ada satupun yang valid, batal diam-diam.
     function nextValidIndex(from, dir) {
       var i = from;
@@ -212,7 +221,7 @@
     window.addEventListener('scroll', reposition, true);
 
     var start = nextValidIndex(0, 1);
-    if (start === -1) { cleanup(); return null; } // gak ada elemen yang ketemu sama sekali di halaman ini
+    if (start === -1) { cleanup(); return null; } // gak ada elemen yang ketemu sama sekali di mock screen ini
     index = start;
     render();
 
@@ -230,26 +239,31 @@
    file ini pernah di-inline langsung ke dalam <script> tag lain — parser HTML berhenti di
    literal tag penutup script pertama yang ditemukan WALAU itu di dalam comment/string JS. Kalau
    di-include normal lewat <script src="guide-tour.js"> (cara yang dianjurkan), ini gak masalah.
+
+   Selector-nya nunjuk ke elemen MOCK di dalam markup guide-walkthrough.template.html (mis.
+   data-mock="btnAddFlexForm" di salah satu .gw-mock block), BUKAN ke tombol asli di halaman app.
 <script src="guide-tour.js"><\/script>
 <script>
   document.addEventListener('DOMContentLoaded', function () {
+    // Jalan HANYA di dalam modal guide, pas user buka modal "User Guide" / pindah ke mock screen
+    // "list" — bukan di-load di halaman app aslinya.
     GuideTour.init([
       {
-        selector: '#btnAddFlexForm',
-        id: { title: 'Tambah Formulir Baru', text: 'Klik di sini buat mulai bikin Flex Form baru dari nol.' },
-        en: { title: 'Add New Form', text: 'Click here to start creating a new Flex Form from scratch.' }
+        selector: '#gwRoot [data-mock="btnAddFlexForm"]',
+        id: { title: 'Tambah Formulir Baru', text: 'Di halaman asli, tombol ini ada di pojok kanan atas. Klik buat mulai bikin Flex Form baru dari nol.' },
+        en: { title: 'Add New Form', text: 'On the real page, this button sits at the top right. Click it to start creating a new Flex Form from scratch.' }
       },
       {
-        selector: '#btnISureGuide',
-        id: { title: 'Panduan Pengguna', text: 'Tombol ini buka panduan lengkap kapan saja Anda butuh.' },
-        en: { title: 'User Guide', text: 'This button opens the full guide any time you need it.' }
+        selector: '#gwRoot [data-mock="btnPanduan"]',
+        id: { title: 'Tombol Panduan', text: 'Ini tombol yang lagi Anda pakai sekarang — buka panduan ini kapan saja.' },
+        en: { title: 'Guide Button', text: 'This is the button you are using right now — opens this guide any time.' }
       }
-      // ... 1 step per kontrol di halaman ini, sampai yang terkecil ...
-    ], { tourId: 'flexform', pageKey: 'list' });
+      // ... 1 step per kontrol di mock screen ini, sampai yang terkecil ...
+    ], { tourId: 'flexform-guide', pageKey: 'mock-list' });
 
-    // Tombol manual "Mulai Tour" / "Take a Tour":
-    document.getElementById('btnStartTour').addEventListener('click', function () {
-      GuideTour.start(stepsForThisPage, { tourId: 'flexform', pageKey: 'list' });
+    // Tombol manual "Mulai Tour" / "Take a Tour", DI DALAM guide:
+    document.getElementById('btnStartTourInGuide').addEventListener('click', function () {
+      GuideTour.start(stepsForThisMockScreen, { tourId: 'flexform-guide', pageKey: 'mock-list' });
     });
   });
 <\/script>

@@ -7,10 +7,11 @@ description: Use when asked to write, generate, or extract an end-user guide / h
 
 Sumber metodologi lengkap (WAJIB dibaca dulu sebelum eksekusi): `../../core/app-user-guide-generator-core.md`
 
-Skeleton siap-isi (3 layer digabung, lihat core doc poin 5b/5c): `../../template/guide-tour.template.js`
-(layer Tour/Coachmark — otomatis jalan DULUAN, nempel ke elemen ASLI, lintas halaman, EN/ID) +
-`../../template/guide-walkthrough.template.html` (layer IK interaktif, dibuka manual) +
-`../../template/GUIDE.template.md` (layer detail lengkap).
+Skeleton siap-isi — 2 layer, SEMUA di dalam guide (gak ada yang overlay di halaman real app), lihat
+core doc poin 5b: `../../template/guide-walkthrough.template.html` (mock screen markup) +
+`../../template/guide-tour.template.js` (engine coachmark granular — spotlight/tooltip per kontrol
+di mock screen itu, EN/ID) jadi 1 layer "Guided Tour", ditambah `../../template/GUIDE.template.md`
+(layer detail lengkap).
 
 ## Ringkasan alur
 
@@ -22,9 +23,11 @@ Skeleton siap-isi (3 layer digabung, lihat core doc poin 5b/5c): `../../template
    cari route/page standalone khusus help/guide. Baru kalau nihil, rekonstruksi dari kode (view →
    JS → controller → constants/enum).
 4. Extract verbatim (kalau ketemu) atau tulis dari hasil investigasi (kalau rekonstruksi). Bangun
-   ketiga layer dari situ: Tour (`template/guide-tour.template.js`, granular — tiap kontrol dapet
-   step, lintas halaman) → IK interaktif (`template/guide-walkthrough.template.html`) → detail
-   (`template/GUIDE.template.md`) — poin 5b/5c core doc.
+   mock screen (`template/guide-walkthrough.template.html`) + pasang engine coachmark
+   (`template/guide-tour.template.js`, selector-nya nunjuk elemen MOCK di dalam guide, granular —
+   tiap kontrol dapet step-nya sendiri) jadi layer Guided Tour, lalu layer detail
+   (`template/GUIDE.template.md`) — poin 5b core doc. Gak ada yang nyuntik overlay ke halaman real
+   app di luar guide.
 5. Jangan narasikan proses trial-error pencarian sendiri di dalam dokumen final.
 
 Jangan eksekusi kalau scope module/project ambigu — tanya user dulu.

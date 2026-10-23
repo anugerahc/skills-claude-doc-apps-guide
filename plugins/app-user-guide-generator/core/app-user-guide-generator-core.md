@@ -91,74 +91,53 @@ Skeleton siap-isi: [`template/GUIDE.template.md`](../template/GUIDE.template.md)
 detail) + [`template/guide-walkthrough.template.html`](../template/guide-walkthrough.template.html)
 (tampilan layer IK, lihat poin 5b).
 
-## 5b. Format tampilan: 3 layer digabung, bukan pilih salah satu
+## 5b. Format tampilan: 2 layer digabung, SEMUA di dalam guide — gak ada yang nongol di real app
 
-Konten lengkap (poin 5) itu beda hal sama **cara dia ditampilin**. Tiga layer ini DIGABUNG dalam
-satu paket guide:
+Konten lengkap (poin 5) itu beda hal sama **cara dia ditampilin**. Dua layer ini DIGABUNG dalam
+satu paket guide, dan **keduanya hidup di dalam guide/modal "User Guide" itu sendiri** — dipicu
+tombol "User Guide"/"Panduan", bukan sesuatu yang auto-overlay di atas halaman real app yang
+sedang dipakai user buat kerja beneran. Ini batasan keras: guide gak pernah nyuntik elemen/overlay
+ke halaman real di luar dirinya sendiri.
 
-0. **Layer Tour/Coachmark — yang paling pertama jalan, OTOMATIS, di atas halaman ASLI** (lihat
-   poin 5c di bawah). Ini bukan simulasi/mockup — ini nempel ke elemen beneran di app yang lagi
-   dipakai user, nyorotin tiap kontrol (sampai yang terkecil) satu-satu dengan tooltip, lintas
-   halaman kalau alurnya emang lintas halaman.
-1. **Layer IK (Instruksi Kerja) interaktif — walkthrough simulasi**, dibuka manual dari tombol
-   "User Guide"/"Panduan" (beda dari layer 0 yang otomatis). Simulasi 1 alur end-to-end, langkah
-   demi langkah, gaya tutorial onboarding game:
-   - Mock UI tiap langkah dibangun ulang pakai HTML/CSS tangan (bukan screenshot/iframe) — niru
-     layout, warna, dan label field dari form asli, supaya kerasa "beneran di app" tapi tetap bisa
-     dianimasiin bebas dan gak basi kalau UI aslinya geser dikit.
-   - Elemen yang harus diklik di tiap langkah dikasih highlight animasi (outline pulsing/glow) biar
-     mata user langsung ketarik ke situ, gak perlu baca paragraf panjang buat nemuin "klik di mana".
-   - Klik elemen yang di-highlight → reveal panel "apa yang terjadi" (mockup dialog konfirmasi,
-     pesan sukses/error, state abis itu) — bukan auto-expand, dipicu interaksi biar kerasa kayak
-     beneran nyoba, bukan baca.
-   - Progress indicator + tombol Back/Next di antara langkah.
-   - Teks instruksi tiap langkah **muncul pelan-pelan (efek ngetik/typewriter)**, bukan langsung
-     nongol semua — ini yang bikin kerasa "jalan sendiri" kayak dialog tutorial game, bukan halaman
-     statis yang kebetulan dianimasiin.
-   - Kalau isi 1 langkah panjang (mock UI besar, reveal panel, dst), **area itu yang scroll**
-     (bukan seluruh guide) — judul langkah & tombol Back/Next tetap keliatan gak ikut ke-scroll.
-   - Kalau module-nya punya beberapa role/persona beda alur (PIC vs reviewer vs approver, dst) —
-     kasih role picker di awal, user pilih dulu baru masuk walkthrough sesuai rolenya.
+1. **Layer "Guided Tour" interaktif — yang pertama keliatan saat guide dibuka.** Simulasi 1 alur
+   end-to-end lewat **mock screens** (replika HTML/CSS tangan dari tiap halaman/langkah real app —
+   bukan screenshot/iframe, dan bukan elemen app yang sebenernya), dengan interaksi gaya
+   product-tour/coachmark (kayak Intro.js/Shepherd.js, tapi dibangun ulang vanilla biar portable,
+   dan nyorot elemen DI DALAM mock screen-nya sendiri, bukan DOM app yang asli):
+   - **Granular**: tiap kontrol di satu mock screen (termasuk tombol kecil/icon-only) dapet step
+     spotlight + tooltip-nya sendiri, bukan cuma aksi utama. Spotlight = highlight pada elemen mock
+     yang lagi dijelasin; tooltip di sebelahnya berisi judul + teks, indicator "Langkah x dari y",
+     tombol Lewati / Kembali / Lanjut-Selesai.
+   - **Teks tooltip muncul pelan-pelan (efek ngetik/typewriter)**, bukan langsung nongol semua —
+     ini yang bikin kerasa "jalan sendiri" kayak dialog tutorial game.
+   - **Toggle bahasa EN/ID** di tiap tooltip, tiap step nyimpen 2 versi teks, pilihan bahasa
+     ke-persist (localStorage) sepanjang sesi guide.
+   - Abis step terakhir 1 mock screen, lanjut ke **mock screen berikutnya** (simulasi "sekarang
+     bayangin abis submit, pindah ke halaman detail") — masih di dalam guide yang sama, bukan
+     navigasi beneran.
+   - Kalau isi 1 mock screen panjang, **area itu yang scroll** (bukan seluruh guide) — judul &
+     nav Lewati/Kembali/Lanjut tetap keliatan.
+   - Kalau module-nya punya beberapa role/persona beda alur — kasih role picker di awal, pilih
+     dulu baru masuk tour sesuai rolenya.
    - Data di contoh (nama, nomor, tanggal) SEMUA karangan/placeholder, dikasih keterangan eksplisit
-     "contoh, bukan data asli" — ini visual mockup, bukan hasil live-query data sungguhan.
+     "contoh, bukan data asli".
+   - Progress (mock screen mana yang udah ditour, step terakhir, bahasa) boleh ke-persist di
+     localStorage scoped ke guide ini doang, biar kalau modal ditutup-buka lagi inget posisi —
+     TIDAK ADA hubungannya sama navigasi halaman real app.
 2. **Layer detail — tetep ada, diakses dari dalam guide yang sama** (nav/topic list/search), isinya
    struktur lengkap poin 5 (Overview, Roles, Lifecycle, step-by-step per screen, Button index, FAQ)
-   — buat kasus yang gak ke-cover walkthrough E2E (edge case, pesan error spesifik, role yang gak
-   dijalanin di walkthrough).
+   — buat kasus yang gak ke-cover Guided Tour (edge case, pesan error spesifik, role yang gak
+   dijalanin di tour).
 
-## 5c. Layer Tour/Coachmark — detail teknis
+Skeleton siap pakai: [`template/guide-tour.template.js`](../template/guide-tour.template.js) (engine
+spotlight/tooltip/step-nav/EN-ID — generic, `selector`-nya diarahkan ke elemen DI DALAM mock screen
+guide, bukan ke elemen real app) dipasangkan sama markup mock screen dari
+[`template/guide-walkthrough.template.html`](../template/guide-walkthrough.template.html).
 
-Pola product-tour/coachmark klasik (kayak Intro.js/Shepherd.js/Driver.js), tapi dibangun ulang
-vanilla (no dependency) biar portable ke stack apapun — repo target sering gak punya build
-pipeline buat npm package frontend:
-
-- **Nempel ke DOM asli**, bukan mockup: tiap step = `{ selector, en:{title,text}, id:{title,text} }`.
-  Engine cari elemen via `selector`, scroll ke situ, gambar overlay gelap dengan "lubang" sorotan
-  pas di elemen itu (spotlight), taruh tooltip di sebelahnya (atas/bawah tergantung sisa ruang).
-- **Granular**: SEMUA kontrol yang user bisa pencet di halaman itu dapet step-nya sendiri, termasuk
-  tombol kecil/icon-only, bukan cuma aksi utama. Kalau 1 halaman punya 15 tombol, ya 15 step.
-- **Toggle bahasa EN/ID**: tiap step nyimpen dua versi teks, tombol toggle di tooltip ganti bahasa
-  on-the-fly, pilihan ke-persist (localStorage) biar konsisten sepanjang tour & lintas halaman.
-- **Lintas halaman**: step dikelompokin per halaman (`pageKey`). Progress keseluruhan (halaman apa
-  aja yang udah di-tour, step terakhir, bahasa, status dismiss) disimpan di localStorage dengan key
-  unik per module (`tourId`). Tiap halaman real app nyisipin script tour-nya sendiri dengan step
-  list punya halaman itu doang; begitu halaman kebuka, engine cek localStorage — kalau halaman ini
-  belum di-tour dan tour belum di-dismiss, otomatis mulai dari step pertama halaman ini. Gak ada
-  cara aman buat "paksa pindah halaman otomatis" (itu bagian dari alur asli yang user jalanin
-  sendiri — submit form, dst) — di step terakhir tiap halaman, tooltip-nya kasih tau lanjut ke mana
-  ("Lanjutkan ke langkah berikutnya di alur Anda — tur otomatis lanjut di sana").
-- **Tombol per step**: Lewati (skip, langsung dismiss keseluruhan tour), Kembali (disabled di step
-  pertama), Lanjut/Selesai, indicator "Langkah x dari y", toggle bahasa.
-- **Cuma jalan sekali otomatis** (first-run) — abis itu bisa dipicu ulang manual lewat tombol
-  "Mulai Tour"/"Take a Tour" kalau user mau liat lagi. Hormat `prefers-reduced-motion` buat animasi
-  transisi spotlight-nya.
-- Skeleton engine siap pakai: [`template/guide-tour.template.js`](../template/guide-tour.template.js)
-  — integrator tinggal isi array step per halaman real app-nya, gak perlu nulis ulang engine-nya.
-
-Sudah ada contoh kerja pola ini (bukan konsep kosong) di `examples/iclause-user-guide/GUIDE.md`
+Sudah ada contoh kerja arah pola ini (bukan konsep kosong) di `examples/iclause-user-guide/GUIDE.md`
 bagian "Quick start" — role picker, mock UI field mirip form asli, highlight animasi, reveal
-"what happens", progress Back/Next — persis pola di atas, cuma kemarin belum diformalkan jadi
-pattern tersendiri. Bagian lain di file yang sama (Overview s/d FAQ) itu layer detailnya.
+"what happens", progress Back/Next, semuanya di dalam modal guide. Bagian lain di file yang sama
+(Overview s/d FAQ) itu layer detailnya.
 
 Modal `#modalFlexFormGuide` (accordion collapsed, liat langsung di module Flex Form Builder) BUKAN
 pola ini — itu lebih statis/kurang menarik dibanding yang dimaksud di sini, jangan dipakai sebagai

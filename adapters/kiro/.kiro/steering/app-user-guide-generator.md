@@ -22,13 +22,14 @@ paling penting:
 3. Gak ketemu guide bawaan → rekonstruksi dari kode, urut: view (label/tombol asli) → JS (dialog
    konfirmasi/validasi) → controller (pesan server) → constants/enum (nama status/role). Kutip
    string exact, jangan ngarang.
-4. Guide-nya 3 layer digabung (poin 5b/5c core doc): Tour/Coachmark (otomatis jalan duluan, nempel
-   ke elemen ASLI di halaman, granular sampai tombol terkecil, lintas halaman, toggle EN/ID;
-   skeleton `_app-user-guide-generator/template/guide-tour.template.js`) → IK interaktif
-   (walkthrough E2E gaya tutorial game — mock UI niru form asli, highlight animasi, reveal "what
-   happens", role picker kalau multi-role; skeleton
-   `_app-user-guide-generator/template/guide-walkthrough.template.html`, dibuka manual) → layer
-   detail lengkap (skeleton `_app-user-guide-generator/template/GUIDE.template.md`).
+4. Guide-nya 2 layer digabung (poin 5b core doc), SEMUA di dalam guide — gak ada overlay di halaman
+   real app: layer Guided Tour = mock screen gaya tutorial game (niru UI form asli, highlight
+   animasi, reveal "what happens", role picker kalau multi-role; skeleton
+   `_app-user-guide-generator/template/guide-walkthrough.template.html`) + engine coachmark
+   granular di atasnya (sampai tombol terkecil, toggle EN/ID, typewriter; skeleton
+   `_app-user-guide-generator/template/guide-tour.template.js` — selector nunjuk elemen MOCK di
+   dalam guide, bukan elemen app asli) → layer detail lengkap (skeleton
+   `_app-user-guide-generator/template/GUIDE.template.md`).
 5. Jangan narasikan proses trial-error pencarian sendiri di dalam dokumen final.
 
 Kalau module/app yang dimaksud, atau maksud "guide"-nya (cara-pakai vs dokumen domain-bisnis),
