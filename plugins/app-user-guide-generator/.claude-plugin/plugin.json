@@ -1,7 +1,7 @@
 {
   "name": "app-user-guide-generator",
   "displayName": "App User Guide Generator",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Generate end-user guides per module from the app's own existing help content (verbatim) or, as a fallback, from source code investigation — not guesses.",
   "author": {
     "name": "Anugerah Christian"

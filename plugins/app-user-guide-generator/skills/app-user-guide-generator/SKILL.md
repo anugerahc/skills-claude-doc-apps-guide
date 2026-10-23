@@ -15,15 +15,18 @@ description: Use when asked to write, generate, or extract an end-user guide / h
 >
 > **Read-only terhadap diri sendiri.** `${CLAUDE_PLUGIN_ROOT}/core` dan
 > `${CLAUDE_PLUGIN_ROOT}/template` TIDAK BOLEH ditulis/diedit — itu bundle plugin, bukan folder
-> kerja. Copy `template/guide-walkthrough.template.html` dan `template/GUIDE.template.md` ke lokasi
-> output di project user dulu, baru edit salinannya di sana.
+> kerja. Copy ketiga skeleton (`guide-tour.template.js`, `guide-walkthrough.template.html`,
+> `GUIDE.template.md`) ke lokasi output di project user dulu, baru edit salinannya di sana.
 
 Sumber metodologi lengkap (WAJIB dibaca dulu sebelum eksekusi):
 `${CLAUDE_PLUGIN_ROOT}/core/app-user-guide-generator-core.md`
 
-Skeleton siap-isi: `${CLAUDE_PLUGIN_ROOT}/template/guide-walkthrough.template.html` (layer IK
-interaktif, ditampilkan duluan) + `${CLAUDE_PLUGIN_ROOT}/template/GUIDE.template.md` (layer detail
-lengkap) — pola gabungannya ada di core doc poin 5b.
+Skeleton siap-isi — 3 layer, lihat core doc poin 5b/5c buat pola gabungannya:
+- `${CLAUDE_PLUGIN_ROOT}/template/guide-tour.template.js` — layer Tour/Coachmark, OTOMATIS jalan
+  duluan, nempel ke elemen ASLI di halaman, granular sampai tombol terkecil, lintas halaman, EN/ID.
+- `${CLAUDE_PLUGIN_ROOT}/template/guide-walkthrough.template.html` — layer IK interaktif, dibuka
+  manual.
+- `${CLAUDE_PLUGIN_ROOT}/template/GUIDE.template.md` — layer detail lengkap.
 
 ## Ringkasan alur
 
@@ -50,11 +53,13 @@ lengkap) — pola gabungannya ada di core doc poin 5b.
    → JS client-side (dialog konfirmasi, pesan validasi) → controller/API (pesan server) →
    constants/enum (nama status/role, mapping `GetLabel()`-style). Kutip string exact — dilarang
    ngarang label yang "kedengerannya masuk akal".
-7. Copy kedua skeleton (path yang sudah di-resolve di langkah 1, bukan hasil pencarian lain) ke
+7. Copy ketiga skeleton (path yang sudah di-resolve di langkah 1, bukan hasil pencarian lain) ke
    folder output di project user, bukan diedit di `${CLAUDE_PLUGIN_ROOT}/template/` langsung:
-   - `guide-walkthrough.template.html` → bangun layer IK interaktif duluan (walkthrough E2E, mock
-     UI niru form asli, highlight animasi, role picker kalau multi-role).
-   - `GUIDE.template.md` → isi layer detail lengkap, nempel/terhubung ke layer IK yang sama.
+   - `guide-tour.template.js` → isi array step per halaman real app (1 step per kontrol, termasuk
+     yang terkecil), include di tiap halaman yang relevan — ini yang jalan OTOMATIS pertama kali.
+   - `guide-walkthrough.template.html` → bangun layer IK interaktif (walkthrough E2E, mock UI niru
+     form asli, highlight animasi, role picker kalau multi-role), dibuka manual.
+   - `GUIDE.template.md` → isi layer detail lengkap, nempel/terhubung ke dua layer di atas.
 8. Jangan narasikan proses trial-error pencarian sendiri (percobaan salah, branch yang ke-skip,
    dst) di DALAM dokumen final — itu buat laporan ke user di chat, bukan isi guide.
 9. Sebelum declare selesai: grep hasil akhir cari `{{` yang kelewat, dan cek label tombol/pesan

@@ -91,13 +91,18 @@ Skeleton siap-isi: [`template/GUIDE.template.md`](../template/GUIDE.template.md)
 detail) + [`template/guide-walkthrough.template.html`](../template/guide-walkthrough.template.html)
 (tampilan layer IK, lihat poin 5b).
 
-## 5b. Format tampilan: IK interaktif (layer depan) + detail (layer dalam)
+## 5b. Format tampilan: 3 layer digabung, bukan pilih salah satu
 
-Konten lengkap (poin 5) itu beda hal sama **cara dia ditampilin**. Dua hal ini DIGABUNG dalam satu
-guide, bukan pilih salah satu:
+Konten lengkap (poin 5) itu beda hal sama **cara dia ditampilin**. Tiga layer ini DIGABUNG dalam
+satu paket guide:
 
-1. **Layer IK (Instruksi Kerja) interaktif — yang pertama keliatan saat guide dibuka.** Simulasi
-   1 alur end-to-end, langkah demi langkah, gaya tutorial onboarding game:
+0. **Layer Tour/Coachmark — yang paling pertama jalan, OTOMATIS, di atas halaman ASLI** (lihat
+   poin 5c di bawah). Ini bukan simulasi/mockup — ini nempel ke elemen beneran di app yang lagi
+   dipakai user, nyorotin tiap kontrol (sampai yang terkecil) satu-satu dengan tooltip, lintas
+   halaman kalau alurnya emang lintas halaman.
+1. **Layer IK (Instruksi Kerja) interaktif — walkthrough simulasi**, dibuka manual dari tombol
+   "User Guide"/"Panduan" (beda dari layer 0 yang otomatis). Simulasi 1 alur end-to-end, langkah
+   demi langkah, gaya tutorial onboarding game:
    - Mock UI tiap langkah dibangun ulang pakai HTML/CSS tangan (bukan screenshot/iframe) — niru
      layout, warna, dan label field dari form asli, supaya kerasa "beneran di app" tapi tetap bisa
      dianimasiin bebas dan gak basi kalau UI aslinya geser dikit.
@@ -120,6 +125,35 @@ guide, bukan pilih salah satu:
    struktur lengkap poin 5 (Overview, Roles, Lifecycle, step-by-step per screen, Button index, FAQ)
    — buat kasus yang gak ke-cover walkthrough E2E (edge case, pesan error spesifik, role yang gak
    dijalanin di walkthrough).
+
+## 5c. Layer Tour/Coachmark — detail teknis
+
+Pola product-tour/coachmark klasik (kayak Intro.js/Shepherd.js/Driver.js), tapi dibangun ulang
+vanilla (no dependency) biar portable ke stack apapun — repo target sering gak punya build
+pipeline buat npm package frontend:
+
+- **Nempel ke DOM asli**, bukan mockup: tiap step = `{ selector, en:{title,text}, id:{title,text} }`.
+  Engine cari elemen via `selector`, scroll ke situ, gambar overlay gelap dengan "lubang" sorotan
+  pas di elemen itu (spotlight), taruh tooltip di sebelahnya (atas/bawah tergantung sisa ruang).
+- **Granular**: SEMUA kontrol yang user bisa pencet di halaman itu dapet step-nya sendiri, termasuk
+  tombol kecil/icon-only, bukan cuma aksi utama. Kalau 1 halaman punya 15 tombol, ya 15 step.
+- **Toggle bahasa EN/ID**: tiap step nyimpen dua versi teks, tombol toggle di tooltip ganti bahasa
+  on-the-fly, pilihan ke-persist (localStorage) biar konsisten sepanjang tour & lintas halaman.
+- **Lintas halaman**: step dikelompokin per halaman (`pageKey`). Progress keseluruhan (halaman apa
+  aja yang udah di-tour, step terakhir, bahasa, status dismiss) disimpan di localStorage dengan key
+  unik per module (`tourId`). Tiap halaman real app nyisipin script tour-nya sendiri dengan step
+  list punya halaman itu doang; begitu halaman kebuka, engine cek localStorage — kalau halaman ini
+  belum di-tour dan tour belum di-dismiss, otomatis mulai dari step pertama halaman ini. Gak ada
+  cara aman buat "paksa pindah halaman otomatis" (itu bagian dari alur asli yang user jalanin
+  sendiri — submit form, dst) — di step terakhir tiap halaman, tooltip-nya kasih tau lanjut ke mana
+  ("Lanjutkan ke langkah berikutnya di alur Anda — tur otomatis lanjut di sana").
+- **Tombol per step**: Lewati (skip, langsung dismiss keseluruhan tour), Kembali (disabled di step
+  pertama), Lanjut/Selesai, indicator "Langkah x dari y", toggle bahasa.
+- **Cuma jalan sekali otomatis** (first-run) — abis itu bisa dipicu ulang manual lewat tombol
+  "Mulai Tour"/"Take a Tour" kalau user mau liat lagi. Hormat `prefers-reduced-motion` buat animasi
+  transisi spotlight-nya.
+- Skeleton engine siap pakai: [`template/guide-tour.template.js`](../template/guide-tour.template.js)
+  — integrator tinggal isi array step per halaman real app-nya, gak perlu nulis ulang engine-nya.
 
 Sudah ada contoh kerja pola ini (bukan konsep kosong) di `examples/iclause-user-guide/GUIDE.md`
 bagian "Quick start" — role picker, mock UI field mirip form asli, highlight animasi, reveal
