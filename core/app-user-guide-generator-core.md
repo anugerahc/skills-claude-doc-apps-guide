@@ -107,6 +107,11 @@ guide, bukan pilih salah satu:
      pesan sukses/error, state abis itu) — bukan auto-expand, dipicu interaksi biar kerasa kayak
      beneran nyoba, bukan baca.
    - Progress indicator + tombol Back/Next di antara langkah.
+   - Teks instruksi tiap langkah **muncul pelan-pelan (efek ngetik/typewriter)**, bukan langsung
+     nongol semua — ini yang bikin kerasa "jalan sendiri" kayak dialog tutorial game, bukan halaman
+     statis yang kebetulan dianimasiin.
+   - Kalau isi 1 langkah panjang (mock UI besar, reveal panel, dst), **area itu yang scroll**
+     (bukan seluruh guide) — judul langkah & tombol Back/Next tetap keliatan gak ikut ke-scroll.
    - Kalau module-nya punya beberapa role/persona beda alur (PIC vs reviewer vs approver, dst) —
      kasih role picker di awal, user pilih dulu baru masuk walkthrough sesuai rolenya.
    - Data di contoh (nama, nomor, tanggal) SEMUA karangan/placeholder, dikasih keterangan eksplisit
