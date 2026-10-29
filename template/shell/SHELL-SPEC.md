@@ -69,6 +69,7 @@ All content lives in the hidden `content` container and is **moved** into the sh
 | `.gw-roles` > `button.gw-role[data-walk="x"]` + `.gw-walk[data-walk="x"] > .gw-wstep` | role picker + step-by-step walkthrough. The shell builds progress bar, counter and Previous/Next. |
 | `[data-gw-go="topic"]` / `[data-gw-tour="screenKey"]` | a link that opens a topic / jumps to a tour screen. Style it with `.gw-go`. |
 | `section#...` named in `tour.screens[].scope` | a mock screen of the tour: the shell moves it into the tour area, keeps it `hidden`, and shows only the screen that is running. |
+| `<svg class="gw-svg" viewBox="...">` | a flowchart / diagram as inline SVG: it scales to the content width. Draw status flows (boxes, labelled arrows, dashed red "reject" loops) this way instead of rows of chips. |
 | `.gw-table`, `.gw-tblwrap`, `.gw-co.tip/warn/note/ex/stop`, `.gw-b.green/yellow/blue/red/grey`, `.gw-flow > .node/.arr`, `.gw-lead`, `.gw-go` | ready-made content blocks styled by `gw-guide.css`. |
 
 The `tour` topic needs no markup: the shell builds it (hero text from `ui.tourLead/tourHow`, chapter chips from the screens' `chapter`, one progress segment per
@@ -90,7 +91,7 @@ screen of the chapter, caption from `tour.captions[screenKey]` or `screen.captio
 ## 4. Theming (tokens)
 
 Override on `:root`, `.gw-overlay` or `.gw-root`: `--gw-accent`, `--gw-accent-2`, `--gw-accent-soft`, `--gw-accent-line`, `--gw-accent-ink`, `--gw-text`,
-`--gw-heading`, `--gw-muted`, `--gw-border`, `--gw-border-2`, `--gw-nav-bg`, `--gw-nav-hover`, `--gw-radius`, `--gw-font`, `--gw-nav-w` (300px),
+`--gw-heading`, `--gw-muted`, `--gw-border`, `--gw-border-2`, `--gw-nav-bg`, `--gw-nav-hover`, `--gw-radius`, `--gw-font`, `--gw-sec-max` (none = topics use the full width; set e.g. 1120px for a narrow reading column), `--gw-nav-w` (300px),
 `--gw-max-w` (1640px), `--gw-body-h` (84vh), `--gw-z` (20000, above fixed navbars and sidebars of common admin themes; the tour bubble is 99992, above everything).
 
 ## 5. UI labels

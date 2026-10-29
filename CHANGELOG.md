@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.1
+
+- Shell: topics fill the whole content width by default (`--gw-sec-max`, was a fixed 1120px column); `.gw-svg` for inline SVG flowcharts (a status flow is drawn as boxes + labelled arrows + dashed reject loops instead of rows of chips); z-index default 20000; tour tooltip is sized for its full text and kept inside the viewport (fixes a last step whose button ended below the screen).
+
 ## 1.6.0
 
 - **New: guide shell** (`template/shell/`): framework-agnostic, vanilla JS + CSS (no jQuery, Bootstrap, Vuexy or Razor). Modal or standalone page with
