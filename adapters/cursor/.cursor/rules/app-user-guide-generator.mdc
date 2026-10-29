@@ -27,3 +27,5 @@ Ringkasan cepat:
   slang), jalanin tour-nya di browser semua role (no console error). Hasil sub-agent/worker
   verifikasi ulang, jangan percaya mentah.
 - Module/app atau maksud "guide" ambigu → tanya user dulu, jangan asumsi.
+
+> v1.6.0: the guide shell (modal/page, search, menu, topics, role walkthroughs) is bundled generic in `template/shell/` (read `SHELL-SPEC.md`), do not rebuild it per project.

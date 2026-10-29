@@ -148,8 +148,13 @@ luar dirinya sendiri.
 ### C. Mock screen = halaman UTUH, bukan potongan
 
 - Tiap mock screen dirakit dari **seluruh komponen halaman asli** dengan urutan & proporsi layout
-  asli (header/topbar, navigasi/stepper, kartu, panel, toolbar) — bukan cuma 1-2 tombol yang lagi
+  asli (header halaman, navigasi/stepper, kartu, panel, toolbar, tabel) — bukan cuma 1-2 tombol yang lagi
   dibahas doang.
+- **Tanpa frame aplikasi (v1.6.0):** jangan gambar sidebar/topbar/window milik aplikasi di sekeliling mock. User sudah
+  kenal itu, dan itu memakan lebar. Yang ditiru adalah ISI halaman. (Guide i-Clause juga begitu.) Judul + satu baris
+  pengantar per layar ditaruh DI ATAS mock (`tour.captions`), bukan di dalamnya.
+- **Kolom sejajar:** baris filter/header tabel tiruan punya SATU sel per kolom tabel aslinya. Baris filter dengan
+  `colspan` besar + grid sendiri tidak akan ikut lebar kolom dan terlihat berantakan.
 - Area yang lagi dijelaskan **disorot** (highlight), sisanya **diredupkan tapi tetap keliatan**
   sebagai konteks — teknik yang dipakai: opacity turun pada elemen lain + outline pada target,
   BUKAN backdrop gelap/`position:fixed` yang nutupin konteks (lihat implementasi di
@@ -244,6 +249,23 @@ yang sama (Overview s/d FAQ) itu layer detailnya.
 Modal `#modalFlexFormGuide` (accordion collapsed, liat langsung di module Flex Form Builder) BUKAN
 pola ini — itu lebih statis/kurang menarik dibanding yang dimaksud di sini, jangan dipakai sebagai
 acuan tampilan.
+
+## 5c. Cangkang guide (v1.6.0): satu paket generik, jangan dibangun ulang per proyek
+
+Sampai 1.5.0 skill hanya mengatur ISI dan mesin tour; cangkang (header, search, menu, modal/halaman, topik "In short",
+Previous/Next, walkthrough peran) ditulis tangan di tiap proyek, dan hasilnya beda-beda. Sejak 1.6.0 cangkangnya ikut
+dibundle di `template/shell/` dan **tidak terikat proyek maupun UI library**: vanilla JS + CSS, nol dependensi, tema lewat
+token `--gw-*`, isi guide = HTML polos, satu config. Spesifikasi lengkap (kontrak markup, config, parity i-Clause, cara
+verifikasi) ada di `template/shell/SHELL-SPEC.md`.
+
+Aturan pakai:
+- Copy file cangkang apa adanya; kustomisasi HANYA lewat config, token CSS, dan isi. Kalau terasa perlu mengedit
+  `gw-guide.js`, itu tanda cangkang kurang generik: laporkan ke user, jangan fork diam-diam.
+- Layar tiruan, CSS tiruan, dan teks adalah milik proyek. Cangkang tidak pernah menata isi mock.
+- Dua mode dari config yang sama: `modal` (tombol di app) dan `page` (route tambahan untuk "Open in new tab").
+- Fitur bisa dimatikan lewat `features` untuk app kecil. Bahasa bebas (bukan cuma id/en) lewat `langs` + `ui` + `tour.strings`.
+- Verifikasi: `template/tools/browser-verify.js` (PASS wajib) + screenshot modal lebar, satu topik dengan detail, satu mock
+  bersanding dengan halaman asli (kolom sejajar?), satu dialog mock, mode halaman. Lebar yang tidak sempat dites ditulis apa adanya.
 
 ## 6. Kemas jadi skill portable
 

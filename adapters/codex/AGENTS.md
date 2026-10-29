@@ -29,3 +29,5 @@ Saat user minta dibuatkan user guide/dokumentasi cara-pakai untuk sebuah module:
    "Anda", tanpa slang), jalanin tour-nya di browser semua role (no console error). Hasil
    sub-agent/worker verifikasi ulang, jangan percaya mentah.
 8. Kalau module/app atau maksud "guide"-nya ambigu, tanya user dulu sebelum mulai.
+
+> v1.6.0: the guide shell (modal/page, search, menu, topics, role walkthroughs) is bundled generic in `template/shell/` (read `SHELL-SPEC.md`), do not rebuild it per project.

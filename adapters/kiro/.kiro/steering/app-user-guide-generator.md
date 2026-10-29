@@ -38,3 +38,5 @@ paling penting:
 
 Kalau module/app yang dimaksud, atau maksud "guide"-nya (cara-pakai vs dokumen domain-bisnis),
 belum jelas, tanya user dulu sebelum mulai investigasi.
+
+> v1.6.0: the guide shell (modal/page, search, menu, topics, role walkthroughs) is bundled generic in `template/shell/` (read `SHELL-SPEC.md`), do not rebuild it per project.

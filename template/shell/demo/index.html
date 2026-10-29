@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>gw-guide demo (modal)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../gw-guide.css">
+    <style>body { font-family: system-ui, sans-serif; padding: 24px; } #openGuide { padding: 8px 16px; border-radius: 8px; cursor: pointer; }</style>
+</head>
+<body>
+    <h1>Plain HTML host</h1>
+    <p>No framework. The guide opens as a modal from the button; "Open in new tab" shows the same guide as a page (<a href="guide.html">guide.html</a>).</p>
+    <button id="openGuide" type="button">Guide</button>
+    <script src="../../guide-tour.template.js"></script>
+    <script src="../gw-guide.js"></script>
+    <script src="demo-guide.js"></script>
+    <script>demoGuide('modal');</script>
+</body>
+</html>

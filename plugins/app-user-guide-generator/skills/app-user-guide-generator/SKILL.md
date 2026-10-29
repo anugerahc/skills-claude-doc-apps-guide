@@ -25,13 +25,18 @@ Sumber metodologi lengkap (WAJIB dibaca dulu sebelum eksekusi):
 Skeleton siap-isi — 2 layer, SEMUA hidup di dalam guide (gak ada yang overlay di halaman real
 app), lihat core doc poin 5b (A-F) buat pola gabungannya:
 - `${CLAUDE_PLUGIN_ROOT}/template/guide-walkthrough.template.html` — markup mock screen (HALAMAN
-  UTUH niru UI app asli — header/nav/kartu/toolbar, bukan screenshot/iframe/potongan).
+  UTUH niru UI app asli — header halaman/stepper/kartu/toolbar/tabel, TANPA frame aplikasi (sidebar/topbar app) di sekelilingnya; bukan screenshot/iframe/potongan).
 - `${CLAUDE_PLUGIN_ROOT}/template/guide-tour.template.js` — engine coachmark: `runScreen()` (1
   mock screen) + `runSequence()` (orkestrasi lintas screen — alur berkelanjutan, bar Previous/
   Replay/Next screen, kartu "Tour complete", localStorage continue) + `verifySelectors()`/
   `verifyOrder()` (dipanggil manual pas verifikasi, poin F). Teknik highlight: dim elemen lain
   (opacity turun, TETAP KELIATAN), bukan backdrop gelap. Selector-nya WAJIB nunjuk elemen MOCK di
   dalam guide (lewat `scope`, bukan `document.querySelector` global).
+- `${CLAUDE_PLUGIN_ROOT}/template/shell/` — **cangkang guide (v1.6.0)**, framework-agnostic (vanilla JS + CSS, tanpa jQuery/Bootstrap/Vuexy/Razor):
+  `gw-guide.js` + `gw-guide.css` (modal ATAU halaman standalone, tombol "Open in new tab", search seluruh isi + highlight, grup menu bisa dilipat, topik
+  "In short" + "Show full details", Previous/Next, walkthrough per peran, tombol bahasa, chrome Guided Tour: chip bab, progress, caption per layar),
+  `SHELL-SPEC.md` (kontrak markup + config + parity i-Clause), `demo/` (HTML polos: modal + halaman), `host/README.md` (Razor/MVC, React/Vue, custom element).
+  Engine tour-nya = `guide-tour.template.js` (copy jadi `gw-tour.js`, global `GwTour`). Gate browser: `template/tools/browser-verify.js`.
 - `${CLAUDE_PLUGIN_ROOT}/template/GUIDE.template.md` — layer detail lengkap (termasuk topik "Quick
   start" — referensi manual self-paced, TERPISAH dari layer Guided Tour di atas).
 - `${CLAUDE_PLUGIN_ROOT}/template/lint-id-text.js` — lint kata casual di teks ID + format teks
@@ -77,6 +82,9 @@ app), lihat core doc poin 5b (A-F) buat pola gabungannya:
      di-set ke screen itu; bagian inti = `[data-core]`), urut KAKU posisi DOM atas->bawah lalu
      kiri->kanan (poin D), diawali sub-step orientasi, kontrol yang harus diklik boleh diulang
      sebagai sub-step penutup `act: true`. Pasang via `GuideTour.runSequence(screens, opts)`.
+   - **Cangkang (v1.6.0) — JANGAN dibangun ulang per proyek:** copy `template/shell/gw-guide.css`, `gw-guide.js` dan `guide-tour.template.js` (jadi `gw-tour.js`) apa adanya ke
+     project (mis. `wwwroot/lib/gw-guide/`), tulis isi guide sebagai HTML polos di container tersembunyi (kontrak di `SHELL-SPEC.md`), lalu satu file config yang memanggil
+     `GwGuide.init({...})`. Halaman standalone ("Open in new tab") = satu route tambahan yang merender isi yang sama dengan `mode: 'page'`. Tema lewat token `--gw-*`.
    - `GUIDE.template.md` → isi layer detail (termasuk topik Quick start TERPISAH dari Guided Tour).
    - Teks ID semua formal baku, pakai "Anda", TANPA slang (poin E) — label UI dikutip persis.
 8. Jangan narasikan proses trial-error pencarian sendiri (percobaan salah, branch yang ke-skip,
@@ -92,6 +100,7 @@ app), lihat core doc poin 5b (A-F) buat pola gabungannya:
    - Jalankan gate statis `template/tools/` (poin F-2c): `harness` 0 notfound, `ordercheck` 0
      inversi, `duplicheck` 0 duplikat, `leakcheck` 0 bocor. Uji juga gate-nya terhadap versi yang
      sengaja dirusak supaya terbukti bisa menangkap bug.
+   - Tempel `template/tools/browser-verify.js` di console (modal terbuka): selector, urutan, semua topik, search, dan tour penuh sampai kartu "Tour complete" — harus PASS.
    - Jalankan SELURUH tour dari langkah 1 sampai Finish di browser beneran (1366 dan 1920, plus
      mobile): no console error, nomor langkah berurutan 1..N, tiap screen kena tour, tooltip gak
      nutupin target, gak ada area kosong gede (poin B), gak ada dialog mock numpuk kontrol lain,

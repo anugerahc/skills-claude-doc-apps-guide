@@ -1,4 +1,7 @@
 /*
+ * [v1.6.0] Language-agnostic (opts.langs / opts.strings), chapter may be { lang: text }, onLangChange, stop() removes the running tooltip and keeps the saved
+ * position, reset() clears it. (These were project patches in 1.5.0.)
+ *
  * Skeleton coachmark/spotlight engine — pola dari core doc poin 5b. Vanilla JS, no deps.
  *
  * PENTING — target-nya SELALU elemen di dalam guide/modal "User Guide" itu sendiri (mock screen
@@ -55,6 +58,19 @@
   'use strict';
 
   var LS_PREFIX = 'guideTour:';
+  var DEFAULT_LANGS = [{ code: 'id', label: 'ID' }, { code: 'en', label: 'EN' }];
+  // Built-in UI strings (id, en). Another language: pass opts.strings = { fr: { next: 'Suivant', ... } } to runScreen/runSequence; missing keys fall back to English.
+  var STR = {
+    id: { next: 'Lanjut', finish: 'Selesai', back: 'Kembali', skip: 'Lewati', step: 'Langkah', of: 'dari', seeResult: 'Lihat hasil', complete: 'Tur selesai',
+          seenAll: 'Anda telah melihat seluruh layar pada alur ini.', replay: 'Ulangi', detail: 'Buka topik detail', prevScreen: '\u2190 Layar sebelumnya', nextScreen: 'Layar berikutnya \u2192' },
+    en: { next: 'Next', finish: 'Finish', back: 'Back', skip: 'Skip', step: 'Step', of: 'of', seeResult: 'See result', complete: 'Tour complete',
+          seenAll: 'You have seen every screen in this flow.', replay: 'Replay', detail: 'Open detail topics', prevScreen: '\u2190 Previous screen', nextScreen: 'Next screen \u2192' }
+  };
+  function tr(lang, key, extra) {
+    var own = (extra && extra[lang]) || {};
+    return own[key] || (STR[lang] && STR[lang][key]) || (extra && extra.en && extra.en[key]) || STR.en[key];
+  }
+  function text(v, lang) { return v && typeof v === 'object' ? (v[lang] || v.en || v.id || '') : (v || ''); }   // a label may be a string or { code: text }
   var reduceMotion = global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function ls(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
@@ -182,6 +198,7 @@
     if (!scopeEl) return null;
     injectStyle();
     var lang = opts.lang || 'id';
+    var langs = opts.langs || DEFAULT_LANGS;
     var index = 0;
 
     var tip = document.createElement('div');
@@ -225,8 +242,8 @@
       var copy = s[lang] || s.id || s.en;
       var isLast = nextValidIndex(index + 1, 1) === -1;
       var nextLabelDefault = isLast
-        ? (opts.lastButtonLabel ? opts.lastButtonLabel[lang] : (lang === 'en' ? 'Finish' : 'Selesai'))
-        : (lang === 'en' ? 'Next' : 'Lanjut');
+        ? (opts.lastButtonLabel ? text(opts.lastButtonLabel, lang) : tr(lang, 'finish', opts.strings))
+        : tr(lang, 'next', opts.strings);
 
       tip.innerHTML = ''
         + '<div class="gt-tip__progress"></div>'
@@ -234,20 +251,19 @@
         + '<p class="gt-tip__text"></p>'
         + '<div class="gt-tip__row">'
         + '  <span>'
-        + '    <button type="button" class="gt-tip__lang" data-lang="id">ID</button>'
-        + '    <button type="button" class="gt-tip__lang" data-lang="en">EN</button>'
+        + langs.map(function (l) { return '    <button type="button" class="gt-tip__lang" data-lang="' + l.code + '">' + l.label + '</button>'; }).join('')
         + '  </span>'
         + '  <span>'
-        + '    <button type="button" class="gt-tip__skip" data-act="skip">' + (lang === 'en' ? 'Skip' : 'Lewati') + '</button>'
-        + '    <button type="button" data-act="back">' + (lang === 'en' ? 'Back' : 'Kembali') + '</button>'
+        + '    <button type="button" class="gt-tip__skip" data-act="skip">' + tr(lang, 'skip', opts.strings) + '</button>'
+        + '    <button type="button" data-act="back">' + tr(lang, 'back', opts.strings) + '</button>'
         + '    <button type="button" class="gt-primary" data-act="next"></button>'
         + '  </span>'
         + '</div>';
 
       var base = opts.base || 0, total = opts.total || steps.length;
       tip.querySelector('.gt-tip__progress').textContent =
-        (lang === 'en' ? 'Step ' : 'Langkah ') + (base + index + 1) + (lang === 'en' ? ' of ' : ' dari ') + total
-        + (opts.chapter ? ' \u00b7 ' + opts.chapter : '');
+        tr(lang, 'step', opts.strings) + ' ' + (base + index + 1) + ' ' + tr(lang, 'of', opts.strings) + ' ' + total
+        + (opts.chapter ? ' \u00b7 ' + text(opts.chapter, lang) : '');   // chapter: string or { lang: text }
       tip.querySelector('.gt-tip__title').textContent = copy.title;
       typewrite(tip.querySelector('.gt-tip__text'), copy.text);
 
@@ -258,7 +274,7 @@
 
       tip.querySelectorAll('.gt-tip__lang').forEach(function (b) {
         b.classList.toggle('active', b.dataset.lang === lang);
-        b.addEventListener('click', function () { lang = b.dataset.lang; render(); });
+        b.addEventListener('click', function () { lang = b.dataset.lang; if (opts.onLangChange) opts.onLangChange(lang); render(); });
       });
       backBtn.addEventListener('click', function () {
         var p = nextValidIndex(index - 1, -1);
@@ -300,6 +316,10 @@
     var tourId = opts.tourId;
     var container = resolveScope(opts.container);
     var lang = opts.lang || (getState(tourId) && getState(tourId).lang) || 'id';
+    var langs = opts.langs || DEFAULT_LANGS;
+    var seeResult = {};
+    langs.forEach(function (l) { seeResult[l.code] = tr(l.code, 'seeResult', opts.strings); });
+    var current = null;
     // penomoran global: base tiap screen = jumlah sub-step screen-screen sebelumnya
     var bases = [], total = 0;
     screens.forEach(function (scr) { bases.push(total); total += scr.steps.length; });
@@ -312,17 +332,21 @@
 
     function startScreen(idx, label) {
       if (idx < 0 || idx >= screens.length) return;
+      if (current) { current.cleanup(); current = null; }
       saveProgress(tourId, { screenIndex: idx, lang: lang });
       clearBar();
       var scr = screens[idx];
       if (opts.onScreenChange) opts.onScreenChange(idx, scr);
-      runScreen(scr.steps, {
+      current = runScreen(scr.steps, {
         scope: scr.scope,
         lang: lang,
+        langs: langs,
+        strings: opts.strings,
         base: bases[idx],
         total: total,
         chapter: scr.chapter,
-        lastButtonLabel: label || { id: 'Lihat hasil', en: 'See result' },
+        lastButtonLabel: label || seeResult,
+        onLangChange: function (l) { lang = l; saveProgress(tourId, { screenIndex: idx, lang: lang }); if (opts.onLangChange) opts.onLangChange(l); },
         onSkip: function () { clearProgress(tourId); clearBar(); if (opts.onSkip) opts.onSkip(); },
         onFinish: function () { onScreenDone(idx); },
       });
@@ -334,11 +358,11 @@
         clearProgress(tourId);
         renderBar(''
           + '<div class="gt-complete">'
-          + '  <h3>' + (lang === 'en' ? 'Tour complete' : 'Tur selesai') + '</h3>'
-          + '  <p>' + (lang === 'en' ? 'You have seen every screen in this flow.' : 'Anda telah melihat seluruh layar pada alur ini.') + '</p>'
+          + '  <h3>' + tr(lang, 'complete', opts.strings) + '</h3>'
+          + '  <p>' + tr(lang, 'seenAll', opts.strings) + '</p>'
           + '  <div class="gt-row">'
-          + '    <button type="button" class="gt-primary" data-act="replay">' + (lang === 'en' ? 'Replay' : 'Ulangi') + '</button>'
-          + '    <button type="button" data-act="detail">' + (lang === 'en' ? 'Open detail topics' : 'Buka topik detail') + '</button>'
+          + '    <button type="button" class="gt-primary" data-act="replay">' + tr(lang, 'replay', opts.strings) + '</button>'
+          + '    <button type="button" data-act="detail">' + tr(lang, 'detail', opts.strings) + '</button>'
           + '  </div>'
           + '</div>');
         container.querySelector('[data-act="replay"]').addEventListener('click', function () { startScreen(0); });
@@ -350,10 +374,10 @@
       renderBar(''
         + '<div class="gt-screenbar">'
         + '  <button type="button" data-act="prev"' + (idx === 0 ? ' disabled' : '') + '>'
-        + '    ' + (lang === 'en' ? '← Previous screen' : '← Layar sebelumnya') + '</button>'
-        + '  <button type="button" data-act="replay">' + (lang === 'en' ? 'Replay' : 'Ulangi') + '</button>'
+        + '    ' + tr(lang, 'prevScreen', opts.strings) + '</button>'
+        + '  <button type="button" data-act="replay">' + tr(lang, 'replay', opts.strings) + '</button>'
         + '  <button type="button" class="gt-primary" data-act="next">'
-        + '    ' + (lang === 'en' ? 'Next screen →' : 'Layar berikutnya →') + '</button>'
+        + '    ' + tr(lang, 'nextScreen', opts.strings) + '</button>'
         + '</div>');
       var prevBtn = container.querySelector('[data-act="prev"]');
       if (!prevBtn.disabled) prevBtn.addEventListener('click', function () { startScreen(idx - 1); });
@@ -366,7 +390,8 @@
     startScreen(typeof opts.startAt === 'number' ? opts.startAt : 0);
 
     return {
-      stop: function () { clearBar(); clearProgress(tourId); },
+      stop: function () { if (current) { current.cleanup(); current = null; } clearBar(); },   // keeps the saved position (resume on the next open)
+      reset: function () { clearProgress(tourId); },
     };
   }
 
@@ -407,7 +432,7 @@
     return report;
   }
 
-  global.GuideTour = {
+  global.GwTour = global.GuideTour = {
     runScreen: runScreen,
     runSequence: runSequence,
     getSavedProgress: getSavedProgress,

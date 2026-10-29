@@ -36,3 +36,5 @@ default, terpisah dari Quick start), ditambah `../../template/GUIDE.template.md`
    Kalau sebagian guide dikerjakan sub-agent/worker, verifikasi ulang — jangan percaya mentah.
 
 Jangan eksekusi kalau scope module/project ambigu — tanya user dulu.
+
+> v1.6.0: the guide shell (modal/page, search, menu, topics, role walkthroughs) is bundled generic in `template/shell/` (read `SHELL-SPEC.md`), do not rebuild it per project.
