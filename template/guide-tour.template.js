@@ -224,8 +224,9 @@
       var el = findEl(index);
       if (!el) return;
       var r = el.getBoundingClientRect();
-      var tipTop = r.bottom + 14;
-      if (tipTop + 150 > window.innerHeight) tipTop = Math.max(10, r.top - 160);
+      var h = tip.offsetHeight || 150, tipTop = r.bottom + 14;   // real height, not a guess: a taller tooltip must still end up inside the viewport
+      if (tipTop + h > window.innerHeight - 10) tipTop = r.top - h - 14;                 // no room below the target: put it above
+      if (tipTop < 10) tipTop = Math.max(10, window.innerHeight - h - 10);               // no room above either: pin it inside the viewport
       var tipLeft = Math.min(Math.max(10, r.left), window.innerWidth - 332);
       tip.style.top = tipTop + 'px';
       tip.style.left = tipLeft + 'px';
@@ -265,7 +266,9 @@
         tr(lang, 'step', opts.strings) + ' ' + (base + index + 1) + ' ' + tr(lang, 'of', opts.strings) + ' ' + total
         + (opts.chapter ? ' \u00b7 ' + text(opts.chapter, lang) : '');   // chapter: string or { lang: text }
       tip.querySelector('.gt-tip__title').textContent = copy.title;
-      typewrite(tip.querySelector('.gt-tip__text'), copy.text);
+      var textEl = tip.querySelector('.gt-tip__text');
+      tip.style.minHeight = ''; textEl.textContent = copy.text; tip.style.minHeight = tip.offsetHeight + 'px';   // size the tooltip for the FULL text first, so it does not grow (and slide off-screen) while it is typed
+      typewrite(textEl, copy.text);
 
       var backBtn = tip.querySelector('[data-act="back"]');
       backBtn.disabled = index === 0;

@@ -4,7 +4,7 @@
     --gw-accent: #1f9d57; --gw-accent-2: #157347; --gw-accent-soft: #e8f6ee; --gw-accent-line: #cfe9da; --gw-accent-ink: #1d5a37;
     --gw-text: #5e6b66; --gw-heading: #2b3230; --gw-muted: #8a948f; --gw-border: #e3e8e5; --gw-border-2: #dde4e0;
     --gw-nav-bg: #f6f8f7; --gw-nav-hover: #e9f1ec; --gw-radius: 14px; --gw-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    --gw-nav-w: 300px; --gw-max-w: 1640px; --gw-body-h: 84vh; --gw-z: 1060;
+    --gw-nav-w: 300px; --gw-max-w: 1640px; --gw-body-h: 84vh; --gw-z: 20000;
     --gw-warn: #ff9f43; --gw-danger: #ea5455; --gw-info: #2f6fed; --gw-violet: #7367f0;
 }
 .gw-lock { overflow: hidden; }

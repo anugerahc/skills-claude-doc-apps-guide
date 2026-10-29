@@ -91,7 +91,7 @@ screen of the chapter, caption from `tour.captions[screenKey]` or `screen.captio
 
 Override on `:root`, `.gw-overlay` or `.gw-root`: `--gw-accent`, `--gw-accent-2`, `--gw-accent-soft`, `--gw-accent-line`, `--gw-accent-ink`, `--gw-text`,
 `--gw-heading`, `--gw-muted`, `--gw-border`, `--gw-border-2`, `--gw-nav-bg`, `--gw-nav-hover`, `--gw-radius`, `--gw-font`, `--gw-nav-w` (300px),
-`--gw-max-w` (1640px), `--gw-body-h` (84vh), `--gw-z` (1060; the tour bubble is 99992, above everything).
+`--gw-max-w` (1640px), `--gw-body-h` (84vh), `--gw-z` (20000, above fixed navbars and sidebars of common admin themes; the tour bubble is 99992, above everything).
 
 ## 5. UI labels
 
